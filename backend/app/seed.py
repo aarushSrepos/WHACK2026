@@ -12,10 +12,11 @@ Dates are worked out from today so the demo is always true:
   something to compare against (C's engine compares calendar months)
 """
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 from app.db import TABLES, connect, create_tables
 from app.mock_data import load_mock
+from app.schemas import NeedsProfileUpdate
 
 PERSONAS = ["priya", "sam", "amara", "alex"]
 
@@ -60,6 +61,57 @@ LAST_MONTH = [
     ("tx_107", "Page & Co Books", 2200, 19, "posted"),
     ("tx_108", "Corner Cafe", 1801, 22, "posted"),
 ]
+
+
+# "Tell us once" needs profiles. Priya has filled hers in but NOT shared it with staff, so the demo can
+# show the consent switch: the staff console sees nothing until she turns sharing on.
+NEEDS = {
+    "priya": dict(channels=["app", "email", "text", "letter", "phone"], preferred_channel="email",
+                  letter_format="easy_read", call_adjustments=["extra_time"],
+                  notes="I'm dyslexic. Short sentences and bullet points help me.", share_with_staff=False),
+    "sam": dict(channels=["app", "email", "text"], preferred_channel="text", letter_format="standard",
+                call_adjustments=["relay_uk"],
+                notes="I'm Deaf. Please never phone me. Text or Relay UK is best.", share_with_staff=True),
+    "amara": dict(channels=["app", "email", "letter", "phone"], preferred_channel="email", letter_format="braille",
+                  call_adjustments=["speak_slowly"],
+                  notes="I use a screen reader. Plain-text emails work best, not PDFs.", share_with_staff=True),
+    "alex": dict(channels=["app", "email"], preferred_channel="app", letter_format="standard",
+                 call_adjustments=["agreed_times", "same_person"], helper_name="Jamie (partner)",
+                 notes="Phone calls make me anxious. Please write to me first.", share_with_staff=True),
+}
+
+# Support requests already in the staff queue: (persona, topic, message, channel, status, hours ago, replies).
+# A reply is (author, text, channel, hours ago).
+REQUESTS = [
+    ("alex", "struggling_to_pay", "I'm worried I won't be able to pay this month. I don't want to talk on the phone.",
+     "app", "open", 20, []),
+    ("sam", "understanding_account", "Why did my minimum payment change?", "text", "in_progress", 30, [
+        ("staff", "Hi Sam, your minimum is £35, or 1% of your balance plus interest if that is more. "
+                  "So it can change with your balance. I'll send a short breakdown by text.", "text", 26),
+        ("note", "Customer is Deaf: text only. Breakdown to follow.", None, 26),
+    ]),
+]
+
+
+def _ago(today: date, hours: int) -> str:
+    noon = datetime.combine(today, time(12, 0), tzinfo=timezone.utc)
+    return (noon - timedelta(hours=hours)).isoformat()
+
+
+def seed_support(conn, today: date) -> None:
+    """Needs profiles and a starting support queue, so the staff console has something to show."""
+    from app import support  # imported here to avoid a circular import
+
+    for persona, needs in NEEDS.items():
+        support.save_needs(conn, persona, NeedsProfileUpdate(**needs), when=_ago(today, 24 * 7))
+    for persona, topic, message, channel, status, hours, replies in REQUESTS:
+        request = support.create_request(conn, persona, topic, message, channel, when=_ago(today, hours))
+        for author, text, reply_channel, reply_hours in replies:
+            support._add_message(conn, request["id"], author, text, reply_channel,
+                                 None if author == "customer" else support.DEMO_STAFF_NAME,
+                                 when=_ago(today, reply_hours))
+        conn.execute("UPDATE support_requests SET status = ? WHERE id = ?", (status, request["id"]))
+    conn.commit()
 
 
 def transaction_rows(today: date) -> list[tuple]:
@@ -108,6 +160,7 @@ def seed(conn, today: date | None = None) -> None:
             )
 
     conn.commit()
+    seed_support(conn, today)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,9 @@ const nav: { href: string; label: string; icon: IconName; group?: string }[] = [
   { href: "/payment", label: "Payments", icon: "wallet" },
   { href: "/simulator", label: "Repayment planner", icon: "chart", group: "TOOLS & SUPPORT" },
   { href: "/limit", label: "Spending controls", icon: "sliders" },
+  { href: "/support", label: "Get support", icon: "help" },
   { href: "/settings", label: "Accessibility", icon: "settings", group: "PREFERENCES" },
+  { href: "/needs", label: "Your needs", icon: "shield" },
 ];
 
 export function SiteHeader() {
@@ -45,6 +47,7 @@ export function SiteHeader() {
           <span className="sidebar-status"><span className={`status-dot ${paused ? "status-paused" : ""}`}/>{paused ? "Card paused" : "Account active"}</span>
         </div>
         <p className="sidebar-demo-note"><BankIcon name="lock" size={14}/> Demonstration environment</p>
+        <a className="sidebar-staff-link" href="/agent" target="_blank" rel="noopener">Open the staff console (demo) <BankIcon name="arrow-up-right" size={13}/></a>
       </div>
     </aside>
     {menuOpen && <button className="mobile-backdrop" type="button" onClick={() => setMenuOpen(false)} aria-label="Close navigation"/>}

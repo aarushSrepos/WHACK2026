@@ -16,7 +16,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app import actions, ai_glue, mutations, queries
+from app import actions, ai_glue, mutations, queries, support
 from app.config import cors_origins, demo_enabled, live_routes, mock_default, use_mock
 from app.db import db
 from app.errors import ApiError
@@ -24,6 +24,18 @@ from app.mock_data import load_mock
 from app.schemas import (
     ActionRequest,
     AskRequest,
+    CustomerReply,
+    NeedsProfile,
+    NeedsProfileUpdate,
+    StaffCustomersResponse,
+    StaffCustomerView,
+    StaffMessageCreate,
+    StaffQueueResponse,
+    StatusUpdate,
+    SupportRequest,
+    SupportRequestCreate,
+    SupportRequestsResponse,
+    SupportStatus,
     AskResponse,
     ConfirmResponse,
     MeResponse,
@@ -73,6 +85,12 @@ def get_persona(x_persona: str = Header(default="priya")) -> str:
     if persona not in PERSONAS:
         raise HTTPException(status_code=400, detail=f"X-Persona must be one of {list(PERSONAS)}")
     return persona
+
+
+def require_staff(x_staff: str = Header(default="")) -> None:
+    """The staff console sends X-Staff: demo-agent. A real bank would use staff sign-in and roles here."""
+    if x_staff != "demo-agent":
+        raise HTTPException(status_code=401, detail="Staff sign-in required.")
 
 
 def require_demo() -> None:
@@ -173,6 +191,79 @@ def confirm_action(action_id: str, persona: str = Depends(get_persona)):
         return confirmations[kind]
     with db() as conn:
         return actions.confirm(conn, persona, action_id)
+
+
+# ---------- "tell us once" and support (customer side) ----------
+
+@app.get("/me/needs", response_model=NeedsProfile, tags=["support"])
+def get_needs(persona: str = Depends(get_persona)):
+    """How the customer wants to be contacted and supported, and whether staff may see it."""
+    with db() as conn:
+        return support.get_needs(conn, persona)
+
+
+@app.put("/me/needs", response_model=NeedsProfile, tags=["support"])
+def put_needs(body: NeedsProfileUpdate, persona: str = Depends(get_persona)):
+    """Save the whole needs profile. share_with_staff controls what the staff console can see."""
+    with db() as conn:
+        return support.save_needs(conn, persona, body)
+
+
+@app.get("/support/requests", response_model=SupportRequestsResponse, tags=["support"])
+def my_requests(persona: str = Depends(get_persona)):
+    """The customer's own support requests and replies (staff-only notes are never included)."""
+    with db() as conn:
+        return support.list_requests(conn, persona)
+
+
+@app.post("/support/requests", response_model=SupportRequest, tags=["support"])
+def new_request(body: SupportRequestCreate, persona: str = Depends(get_persona)):
+    """Ask a person for help. The reply channel must be one the customer allows."""
+    with db() as conn:
+        return support.create_request(conn, persona, body.topic, body.message, body.channel)
+
+
+@app.post("/support/requests/{request_id}/messages", response_model=SupportRequest, tags=["support"])
+def reply_to_request(request_id: int, body: CustomerReply, persona: str = Depends(get_persona)):
+    with db() as conn:
+        return support.customer_reply(conn, persona, request_id, body.text)
+
+
+# ---------- staff console ----------
+
+@app.get("/staff/requests", response_model=StaffQueueResponse, tags=["staff"], dependencies=[Depends(require_staff)])
+def staff_queue(status: SupportStatus | None = None):
+    """Every support request: open first, then in progress, then resolved."""
+    with db() as conn:
+        return support.staff_queue(conn, status)
+
+
+@app.get("/staff/customers", response_model=StaffCustomersResponse, tags=["staff"], dependencies=[Depends(require_staff)])
+def staff_customers():
+    with db() as conn:
+        return support.staff_customers(conn)
+
+
+@app.get("/staff/customers/{customer}", response_model=StaffCustomerView, tags=["staff"], dependencies=[Depends(require_staff)])
+def staff_customer(customer: str):
+    """One customer: their needs and guidance (only if shared), account snapshot and requests."""
+    if customer not in PERSONAS:
+        raise HTTPException(status_code=404, detail="We could not find that customer.")
+    with db() as conn:
+        return support.staff_customer(conn, customer)
+
+
+@app.patch("/staff/requests/{request_id}", response_model=SupportRequest, tags=["staff"], dependencies=[Depends(require_staff)])
+def staff_status(request_id: int, body: StatusUpdate):
+    with db() as conn:
+        return support.staff_set_status(conn, request_id, body.status)
+
+
+@app.post("/staff/requests/{request_id}/messages", response_model=SupportRequest, tags=["staff"], dependencies=[Depends(require_staff)])
+def staff_message(request_id: int, body: StaffMessageCreate):
+    """Reply to the customer (simulated delivery) or add a staff-only note. Blocked channels return 409."""
+    with db() as conn:
+        return support.staff_message(conn, request_id, body.text, body.channel, body.internal)
 
 
 @app.post("/demo/spend", response_model=SpendResponse, tags=["demo"], dependencies=[Depends(require_demo)])

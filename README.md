@@ -16,7 +16,26 @@ SpendSense is a credit card companion for customers with accessibility needs. Th
 | **Credit simulator** | See how paying more than the minimum changes the time and the interest; what happens if you miss a payment |
 | **Payments** | Pay the minimum, the full balance or any amount |
 | **Spending & wellbeing** | Set your own monthly limit, get a gentle check-in at 80%, pause your card for 24 hours, find independent support |
+| **Get support** | Talk to a person without a phone queue. Choose how they reply (only from the ways you allow), and see their replies here. Offered automatically if you tell the assistant you're struggling to pay |
+| **Your needs** | "Tell us once": how we may contact you (e.g. never by phone), letter format (large print, Easy Read, braille, audio), call adjustments (Relay UK, extra time), someone who helps you, and a switch to share it with staff |
 | **Accessibility** | The same assistant or manual controls at any time: text size, contrast, font, wording, line spacing, larger buttons, motion and speech. Saved, and applied everywhere |
+
+### The staff console (`/agent`)
+
+The brief asks for hacks that help Capital One **help customers**, so there is a second screen for staff. Open it from the link at the bottom of the sidebar.
+
+- **Support queue:** every request, open first, refreshed every few seconds. A request a customer sends is visible to staff straight away.
+- **"How to help {customer}":** plain instructions built from the customer's needs, for example "Do not phone Sam. Calls are blocked", "Use Relay UK", "Send every letter in Easy Read" or "In their words: …". This is shown **only if the customer chose to share it**.
+- **Contact rules are enforced by the server.** Staff cannot reply by a channel the customer has not allowed. Trying to phone Alex returns "Alex has asked not to be contacted by phone call". This rule applies even when the customer has not shared their details.
+- Replies (delivery by email, text or letter is simulated) appear in the customer's app. Staff-only notes never do.
+- Sign-in is a demo `X-Staff` header. A real bank would use staff login and roles.
+
+**Demo script:**
+1. As Priya, open the staff console: her needs show as "not shared".
+2. On Your needs, turn sharing on and save. The staff view updates.
+3. On Statements, ask "What if I can't pay this month?" and accept the offer of help by text. The request appears in the staff queue.
+4. In the staff console, try to phone Alex: it's blocked. Reply in the app instead.
+5. Switch to Alex and open Get support: the reply is there, and the staff-only note isn't.
 
 ### Two safety rules
 
@@ -76,6 +95,7 @@ cd frontend && npm run typecheck && npm run lint && npm run test:demo && npm run
 frontend/ (Next.js)          backend/ (FastAPI + SQLite)
   src/app/*        pages       app/main.py      routes (X-Persona header instead of login)
   src/components/  UI          app/actions.py   propose -> confirm, run once
+                               app/support.py   needs profile, consent, contact rules, staff queue
   src/lib/api.ts   API client  engine/          every number (balance, interest, minimum…)
   src/lib/accessibility-chat.ts  assistant rules  ai/        intent -> figures -> Claude or template -> number check
   src/app/api/accessibility-ai   optional AI for the assistant (opt-in)

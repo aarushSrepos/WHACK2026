@@ -76,4 +76,6 @@ def answer_question(conn, persona, question, level, account, transactions, today
         "verified": result["verified"],
         "badge": result["label"],
         "proposed_action": proposed,
+        # "I can't pay", "what if I miss a payment": offer a person, on the customer's terms.
+        "support_offer": result.get("intent") == "missed_payment",
     }
