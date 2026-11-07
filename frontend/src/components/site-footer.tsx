@@ -9,7 +9,7 @@ export function SiteFooter() {
           detailed={
             <p>
               SpendSense demo for a Capital One hackathon. Sample data only.
-              Not a real account, and payments are not available yet.
+              Not a real account: payments, disputes and card pauses are simulated and no money moves.
             </p>
           }
         />

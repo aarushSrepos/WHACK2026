@@ -59,7 +59,36 @@ def render(intent: str, level: str, f: Dict[str, Figure], facts: Dict[str, str])
             return ("You have not set a monthly spending limit yet. You can set one in settings.", [])
         return (f"You have spent {_d(f,'month_spend')} of your {_d(f,'spending_limit')} monthly limit. That is {_d(f,'limit_progress')}.",
                 ["month_spend", "spending_limit", "limit_progress"])
-    return ("I can explain your bill, show what to pay and when, dispute a charge, or pause your card. What would you like?", [])
+    if intent == "interest":
+        t = f"Interest is about {_d(f,'interest_estimate')} a month on your balance of {_d(f,'balance')}."
+        ids = ["interest_estimate", "balance"]
+        if simple:
+            t += " Paying more than the minimum means less interest."
+        else:
+            t += (f" Interest is added to the part of your balance you have not paid. Your minimum payment is "
+                  f"{_d(f,'minimum_payment')}. Paying more than that lowers the interest you pay over time. "
+                  "You can compare amounts in the credit simulator.")
+            ids.append("minimum_payment")
+        return t, ids
+    if intent == "missed_payment":
+        t = (f"Your minimum payment is {_d(f,'minimum_payment')}, due in {_d(f,'days_until_due')}. "
+             "If a payment is missed, you may pay a fee and more interest, and it can show on your credit file.")
+        if simple:
+            t += " If you are finding it hard to pay, tell us early. We can talk about options."
+        else:
+            t += (" The exact fee and effect depend on your account terms. If you are finding it hard to pay, "
+                  "contact us as early as you can to talk about support. Free, independent help is also available "
+                  "from MoneyHelper and StepChange.")
+        return t, ["minimum_payment", "days_until_due"]
+    if intent == "afford":
+        t = f"You have {_d(f,'available_credit')} of credit available."
+        ids = ["available_credit"]
+        if "spending_limit" in f:
+            t += f" You have spent {_d(f,'month_spend')} of your own {_d(f,'spending_limit')} monthly limit."
+            ids += ["month_spend", "spending_limit"]
+        t += " Only you can decide what is right for you. I can show your spending or help you set a limit."
+        return t, ids
+    return ("I can explain your bill, interest and what to pay, dispute a charge, or pause your card. What would you like?", [])
 
 
 def check_in_message(f: Dict[str, Figure], status: str) -> dict | None:

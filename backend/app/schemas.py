@@ -13,7 +13,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-Persona = Literal["priya", "sam", "amara"]
+Persona = Literal["priya", "sam", "amara", "alex"]
 ActionType = Literal["pay", "dispute", "pause_card", "unpause_card"]
 
 

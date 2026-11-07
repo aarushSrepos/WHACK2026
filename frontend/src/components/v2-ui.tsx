@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useDemo, pounds } from "@/components/demo-provider";
+import { useDemo } from "@/components/demo-provider";
+import { pounds } from "@/lib/money";
 import { ReadAloudButton } from "@/components/read-aloud-button";
 import type { AskResponse } from "@/lib/api";
 
@@ -46,7 +47,7 @@ export function ConfirmAction() {
         <section role="region" aria-labelledby="confirm-heading" className="ss-card my-5 border-2 border-brand">
           <h2 id="confirm-heading" className="text-xl font-bold">Review and confirm</h2>
           <p className="my-3">{pending.readBack}</p>
-          <ReadAloudButton text={pending.readBack} />
+          <ReadAloudButton text={pending.readBack} what="what you are about to confirm" />
           <div className="mt-4 flex flex-wrap gap-3">
             <button className="v2-button" disabled={busy} onClick={run}>Confirm action</button>
             <button className="v2-button-alt" disabled={busy} onClick={cancel}>Cancel</button>
@@ -72,23 +73,25 @@ function Receipts() {
 export function StatementContent() {
   const { transactions, balancePence, minimumPence, dueDate, ask, adopt, loading, loadError, persona } = useDemo();
   const [detailed, setDetailed] = useState(false);
-  const [explain, setExplain] = useState<AskResponse | null>(null);
+  // The explanation is tagged with who and which format it was for, so a stale one is never shown.
+  const [explained, setExplained] = useState<{ key: string; answer: AskResponse | null } | null>(null);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<AskResponse | null>(null);
   const [asking, setAsking] = useState(false);
   const token = useRef(0);
   const format = detailed ? "detailed" : "simple";
+  const key = `${persona}:${format}`;
+  const explain = explained?.key === key ? explained.answer : null;
 
   // The explanation comes from the server: the engine works out the numbers and every figure is checked.
   useEffect(() => {
     if (loading || loadError) return;
     const mine = ++token.current;
-    setExplain(null);
     ask("Why is my bill higher this month?", format).then((r) => {
-      if (mine === token.current) setExplain(r);
+      if (mine === token.current) setExplained({ key, answer: r });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, loadError, format, persona]);
+  }, [loading, loadError, key]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,8 +121,10 @@ export function StatementContent() {
           <>
             <p>{explain.answer}</p>
             <p className="font-semibold">{explain.badge}</p>
-            <ReadAloudButton text={explain.answer} />
+            <ReadAloudButton text={explain.answer} what="the explanation" />
           </>
+        ) : explained?.key === key ? (
+          <p>We could not get an explanation right now. You can still ask a question below.</p>
         ) : (
           <p role="status">Working out your explanation…</p>
         )}
@@ -150,7 +155,7 @@ export function StatementContent() {
                 ))}
               </ul>
             )}
-            <ReadAloudButton text={answer.answer} />
+            <ReadAloudButton text={answer.answer} what="the answer" />
           </div>
         )}
       </form>
@@ -226,9 +231,10 @@ export function DisputeContent() {
 
 export function PaymentContent() {
   const { minimumPence, balancePence, propose, dueDate } = useDemo();
-  const [amount, setAmount] = useState("");
-  const value = amount === "" ? minimumPence / 100 : Number(amount);
-  const pence = Math.round(value * 100);
+  // null = the customer has not typed anything yet, so show the minimum. An empty box stays empty.
+  const [amount, setAmount] = useState<string | null>(null);
+  const shown = amount ?? (minimumPence / 100).toFixed(2);
+  const pence = shown.trim() === "" ? NaN : Math.round(Number(shown) * 100);
   return (
     <DataGate>
       <section className="ss-card space-y-4">
@@ -241,16 +247,28 @@ export function PaymentContent() {
           type="number"
           min="0.01"
           step="0.01"
-          value={amount === "" ? String(minimumPence / 100) : amount}
+          inputMode="decimal"
+          value={shown}
           onChange={(e) => setAmount(e.target.value)}
         />
+        <div className="flex flex-wrap gap-3" role="group" aria-label="Quick amounts">
+          <button type="button" className="v2-button-alt" onClick={() => setAmount((minimumPence / 100).toFixed(2))}>
+            Minimum ({pounds(minimumPence)})
+          </button>
+          <button type="button" className="v2-button-alt" onClick={() => setAmount((balancePence / 100).toFixed(2))}>
+            Full balance ({pounds(balancePence)})
+          </button>
+        </div>
         <button
           className="v2-button"
-          disabled={!Number.isFinite(pence) || pence <= 0}
+          disabled={!Number.isFinite(pence) || pence <= 0 || pence > balancePence}
           onClick={() => propose({ type: "pay", amountPence: pence })}
         >
           Review payment
         </button>
+        {Number.isFinite(pence) && pence > balancePence && (
+          <p role="status">That is more than your balance of {pounds(balancePence)}.</p>
+        )}
       </section>
       <ConfirmAction />
       <Receipts />
@@ -260,10 +278,9 @@ export function PaymentContent() {
 
 export function LimitContent() {
   const { monthlyLimitPence, setMonthlyLimit, spentPence, percentUsed, demoSpend, paused, propose, reset, creditLimitPence } = useDemo();
-  const [draft, setDraft] = useState("");
-  useEffect(() => {
-    setDraft(monthlyLimitPence ? String(monthlyLimitPence / 100) : "");
-  }, [monthlyLimitPence]);
+  // null = not edited, so the box shows the saved limit.
+  const [edited, setEdited] = useState<string | null>(null);
+  const draft = edited ?? (monthlyLimitPence ? String(monthlyLimitPence / 100) : "");
   const percent = percentUsed === null ? null : Math.round(percentUsed);
   const draftNumber = Number(draft);
   return (
@@ -271,9 +288,9 @@ export function LimitContent() {
       <section className="ss-card space-y-4">
         <h2 className="text-xl font-bold">Your monthly spending limit</h2>
         <label htmlFor="limit">My monthly limit (£)</label>
-        <input className="v2-input" id="limit" type="number" min="1" step="1" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <input className="v2-input" id="limit" type="number" min="1" step="1" value={draft} onChange={(e) => setEdited(e.target.value)} />
         <p className="text-sm">Your limit is your own choice and needs to be below your credit limit of {pounds(creditLimitPence)}.</p>
-        <button className="v2-button" disabled={!(draftNumber > 0) || draftNumber * 100 === monthlyLimitPence} onClick={() => setMonthlyLimit(draftNumber)}>
+        <button className="v2-button" disabled={!(draftNumber > 0) || draftNumber * 100 === monthlyLimitPence} onClick={async () => { if (await setMonthlyLimit(draftNumber)) setEdited(null); }}>
           Save limit
         </button>
         {monthlyLimitPence === null || percent === null ? (

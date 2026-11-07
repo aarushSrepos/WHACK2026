@@ -28,7 +28,7 @@ def test_health():
     assert r.json()["mock"] is True
 
 
-@pytest.mark.parametrize("persona", ["priya", "sam", "amara"])
+@pytest.mark.parametrize("persona", ["priya", "sam", "amara", "alex"])
 def test_me_for_each_persona(persona):
     r = client.get("/me", headers=as_persona(persona))
     assert r.status_code == 200

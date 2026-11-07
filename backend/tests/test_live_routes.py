@@ -136,8 +136,8 @@ def test_seeding_twice_does_not_duplicate_rows():
     conn = connect()
     seed(conn)
     seed(conn)
-    assert conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 3
-    assert conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 54
+    assert conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 4
+    assert conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 72  # 18 per persona
     conn.close()
 
 

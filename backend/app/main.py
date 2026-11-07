@@ -36,14 +36,14 @@ from app.schemas import (
 )
 from app.seed import seed
 
-PERSONAS = ("priya", "sam", "amara")
+PERSONAS = ("priya", "sam", "amara", "alex")
 
 app = FastAPI(
     title="SpendSense API",
     version="0.2.0",
     description=(
         "Accessible credit-card companion. Simulated demo data only. "
-        "Send an X-Persona header (priya, sam or amara) instead of logging in."
+        "Send an X-Persona header (priya, sam, amara or alex) instead of logging in."
     ),
 )
 
@@ -186,7 +186,7 @@ def demo_spend(body: SpendRequest, persona: str = Depends(get_persona)):
 
 @app.post("/demo/reset", response_model=ResetResponse, tags=["demo"], dependencies=[Depends(require_demo)])
 def demo_reset():
-    """Rehearsal helper: put all three personas back to their starting data."""
+    """Rehearsal helper: put every persona back to their starting data."""
     if use_mock("demo_reset"):
         return {"ok": True, "message": "Mock mode: nothing to reset."}
     with db() as conn:

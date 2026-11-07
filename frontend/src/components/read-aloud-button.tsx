@@ -1,22 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { useAccessibility } from "@/components/accessibility-provider";
 import { speak, speechSupported, stopSpeaking } from "@/lib/speech";
 
-export function ReadAloudButton({ text }: { text: string }) {
+const noSubscribe = () => () => {};
+
+/**
+ * Reads `text` aloud with the browser's speech.
+ * `what` says what will be read, e.g. "your account summary" (used in the help text and status).
+ * `onNavy` is for the dark balance panel; everywhere else the button sits on a light card.
+ */
+export function ReadAloudButton({ text, what = "this explanation", onNavy = false }: { text: string; what?: string; onNavy?: boolean }) {
+  const muted = onNavy ? "text-on-navy-muted" : "text-muted";
   const { settings } = useAccessibility();
   const helpId = useId();
   const statusId = useId();
-  const [speaking, setSpeaking] = useState(false);
-  const [supported, setSupported] = useState(true);
+  const [playing, setPlaying] = useState(false);
+  const supported = useSyncExternalStore(noSubscribe, speechSupported, () => true);
   const [status, setStatus] = useState("");
   const mounted = useRef(true);
+  // Turning speech off in settings stops the button straight away.
+  const speaking = playing && settings.speechEnabled;
 
   useEffect(() => {
     mounted.current = true;
-    setSupported(speechSupported());
     return () => {
       mounted.current = false;
       stopSpeaking();
@@ -24,10 +33,7 @@ export function ReadAloudButton({ text }: { text: string }) {
   }, []);
 
   useEffect(() => {
-    if (!settings.speechEnabled) {
-      stopSpeaking();
-      setSpeaking(false);
-    }
+    if (!settings.speechEnabled) stopSpeaking();
   }, [settings.speechEnabled]);
 
   function toggle() {
@@ -35,26 +41,26 @@ export function ReadAloudButton({ text }: { text: string }) {
 
     if (speaking) {
       stopSpeaking();
-      setSpeaking(false);
+      setPlaying(false);
       setStatus("Stopped reading.");
       return;
     }
 
-    setStatus("Reading your account summary.");
-    setSpeaking(true);
+    setStatus(`Reading ${what}.`);
+    setPlaying(true);
     const started = speak(text, settings.speechRate, {
       onend: () => {
-        if (mounted.current) setSpeaking(false);
+        if (mounted.current) setPlaying(false);
       },
       onerror: (message) => {
         if (!mounted.current) return;
-        setSpeaking(false);
+        setPlaying(false);
         setStatus(message);
       },
     });
 
     if (!started) {
-      setSpeaking(false);
+      setPlaying(false);
       setStatus("This browser cannot read text aloud.");
     }
   }
@@ -69,18 +75,20 @@ export function ReadAloudButton({ text }: { text: string }) {
         aria-pressed={speaking}
         aria-describedby={`${helpId} ${statusId}`}
         disabled={unavailable}
-        className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-3 text-base font-semibold text-navy disabled:cursor-not-allowed disabled:opacity-70"
+        className={`inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-3 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-70 ${
+          onNavy ? "bg-white text-navy" : "border-2 border-brand bg-surface text-ink"
+        }`}
       >
         <SpeakerIcon />
         {speaking ? "Stop reading" : "Read aloud"}
       </button>
-      <p id={helpId} className="mt-2 max-w-prose text-sm text-on-navy-muted">
-        {unsupportedCopy(supported, settings.speechEnabled)}
+      <p id={helpId} className={`mt-2 max-w-prose text-sm ${muted}`}>
+        {unsupportedCopy(supported, settings.speechEnabled, what, onNavy)}
       </p>
       <p
         id={statusId}
         role="status"
-        className={status ? "mt-2 text-sm text-on-navy-muted" : "sr-only"}
+        className={status ? `mt-2 text-sm ${muted}` : "sr-only"}
       >
         {status}
       </p>
@@ -88,7 +96,7 @@ export function ReadAloudButton({ text }: { text: string }) {
   );
 }
 
-function unsupportedCopy(supported: boolean, speechEnabled: boolean) {
+function unsupportedCopy(supported: boolean, speechEnabled: boolean, what: string, onNavy: boolean) {
   if (!supported) {
     return "This browser cannot read text aloud.";
   }
@@ -96,14 +104,14 @@ function unsupportedCopy(supported: boolean, speechEnabled: boolean) {
     return (
       <>
         Speech is turned off. Turn it on in{" "}
-        <Link href="/settings" className="text-on-navy">
+        <Link href="/settings" className={onNavy ? "text-on-navy" : "text-ink"}>
           Share your situation
         </Link>
         .
       </>
     );
   }
-  return "Reads your balance, minimum payment, and due date.";
+  return `Reads ${what} out loud.`;
 }
 
 function SpeakerIcon() {

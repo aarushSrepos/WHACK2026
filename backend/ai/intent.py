@@ -10,6 +10,9 @@ INTENT_FIGURES = {
     "pay": ["minimum_payment", "balance", "requested_amount", "days_until_due"],
     "pause": [],
     "limit": ["spending_limit", "month_spend", "limit_progress"],
+    "interest": ["interest_estimate", "balance", "minimum_payment"],
+    "missed_payment": ["minimum_payment", "days_until_due"],
+    "afford": ["available_credit", "spending_limit", "month_spend", "limit_progress"],
     "other": [],
 }
 ACTION_FOR_INTENT = {"dispute": "dispute", "pay": "pay", "pause": "pause"}   # only these may propose
@@ -17,6 +20,10 @@ ACTION_FOR_INTENT = {"dispute": "dispute", "pay": "pay", "pause": "pause"}   # o
 _RULES = [
     ("pause", r"\b(pause|freeze|lock|stop)\b.*\bcard\b|\bcard\b.*\b(pause|freeze|lock)\b"),
     ("dispute", r"recogni[sz]e|dispute|fraud|wrong charge|didn'?t make|did not make|unauthori[sz]ed|not mine"),
+    # These three come before "pay": "how much interest will I pay" is a question, not a payment.
+    ("missed_payment", r"\bmiss(ed|ing)?\b|\blate (payment|fee)|can'?t pay|cannot pay|unable to pay|struggl"),
+    ("interest", r"\binterest\b|\bapr\b"),
+    ("afford", r"\bafford\b|can i (buy|spend)"),
     ("pay", r"\b(pay|settle)\s+(the|my|it|off|in full|minimum|full|£|\d)|make a payment|\bpay\b$"),
     ("due", r"\bdue\b|when|deadline|how much do i (need|have) to pay|minimum"),
     ("limit", r"limit|budget|spent|spending"),

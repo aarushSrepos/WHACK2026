@@ -1,10 +1,9 @@
 "use client";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   api,
   ApiError,
   type ActionType,
-  type ApiPersona,
   type ApiTransaction,
   type AskResponse,
   type Format,
@@ -13,8 +12,7 @@ import {
 } from "@/lib/api";
 
 export type Persona = "priya" | "sam" | "amara" | "alex";
-// The backend has three demo customers. Alex (calmer view, optional limits) uses Sam's data: no limit set yet.
-const API_PERSONA: Record<Persona, ApiPersona> = { priya: "priya", sam: "sam", amara: "amara", alex: "sam" };
+export const PERSONAS: readonly Persona[] = ["priya", "sam", "amara", "alex"];
 
 export type Transaction = { id: string; merchant: string; amountPence: number; date: string; dateISO: string; status: ApiTransaction["status"] };
 export type Pending = { id: string; type: ActionType; readBack: string };
@@ -31,6 +29,7 @@ type Demo = {
   minimumPence: number;
   creditLimitPence: number;
   availableCreditPence: number;
+  aprBasisPoints: number;
   dueDate: string;
   dueDateISO: string;
   dueInDays: number;
@@ -65,25 +64,40 @@ const daysUntil = (iso: string) => {
   return Math.round((new Date(`${iso}T00:00:00`).getTime() - today.getTime()) / 86400000);
 };
 
+// The chosen demo customer lives in localStorage. Reading it through useSyncExternalStore means the
+// server render and first client render agree ("priya"), then React switches to the saved one.
+const PERSONA_KEY = "spendsense-persona";
+const personaListeners = new Set<() => void>();
+const isPersona = (v: unknown): v is Persona => PERSONAS.includes(v as Persona);
+function readPersona(): Persona {
+  try {
+    const v = localStorage.getItem(PERSONA_KEY);
+    return isPersona(v) ? v : "priya";
+  } catch {
+    return "priya";
+  }
+}
+function subscribePersona(onChange: () => void) {
+  personaListeners.add(onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    personaListeners.delete(onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
 type Loaded = { me: MeResponse; transactions: Transaction[]; dueInDays: number };
+/** The last answer from the server, tagged with who it was for, so we never show one customer's data as another's. */
+type Result = { who: Persona; data: Loaded | null; error: string | null };
 
-export function DemoProvider({ children }: { children: React.ReactNode }) {
-  const [persona, setPersonaState] = useState<Persona>("priya");
-  const [data, setData] = useState<Loaded | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [pending, setPending] = useState<Pending | null>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const [receipts, setReceipts] = useState<string[]>([]);
-  const latest = useRef(0); // ignore a slow answer for a customer we have already switched away from
-  const who = API_PERSONA[persona];
-
-  const refresh = useCallback(async () => {
-    const id = ++latest.current;
-    try {
-      const [me, tx] = await Promise.all([api.me(who), api.transactions(who)]);
-      if (id !== latest.current) return;
-      setData({
+/** Fetch one customer's account and transactions. Never throws: a failure comes back as `error`. */
+async function load(who: Persona): Promise<Result> {
+  try {
+    const [me, tx] = await Promise.all([api.me(who), api.transactions(who)]);
+    return {
+      who,
+      error: null,
+      data: {
         me,
         dueInDays: daysUntil(me.account.due_date),
         transactions: tx.transactions.map((t) => ({
@@ -94,33 +108,50 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
           dateISO: t.date,
           status: t.status,
         })),
-      });
-      setLoadError(null);
-    } catch (e) {
-      if (id !== latest.current) return;
-      setLoadError(e instanceof ApiError ? e.message : "Something went wrong. Please try again.");
-    } finally {
-      if (id === latest.current) setLoading(false);
-    }
+      },
+    };
+  } catch (e) {
+    return { who, data: null, error: e instanceof ApiError ? e.message : "Something went wrong. Please try again." };
+  }
+}
+
+export function DemoProvider({ children }: { children: React.ReactNode }) {
+  const persona = useSyncExternalStore(subscribePersona, readPersona, () => "priya" as Persona);
+  const [result, setResult] = useState<Result | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [receipts, setReceipts] = useState<string[]>([]);
+  const latest = useRef(0); // ignore a slow answer for a customer we have already switched away from
+  const who = persona;
+
+  const refresh = useCallback(async () => {
+    const id = ++latest.current;
+    const r = await load(who);
+    if (id === latest.current) setResult(r);
   }, [who]);
 
+  // Load the account whenever the customer changes. State is only set once the server answers.
   useEffect(() => {
-    const v = localStorage.getItem("spendsense-persona");
-    if (v === "priya" || v === "sam" || v === "amara" || v === "alex") setPersonaState(v);
-  }, []);
+    const id = ++latest.current;
+    load(who).then((r) => {
+      if (id === latest.current) setResult(r);
+    });
+  }, [who]);
 
-  useEffect(() => {
-    setLoading(true);
-    setData(null);
+  const current = result?.who === who ? result : null;
+  const data = current?.data ?? null;
+
+  const setPersona = (p: Persona) => {
+    if (p === persona) return;
     setPending(null);
     setNotice(null);
     setReceipts([]);
-    refresh();
-  }, [refresh]);
-
-  const setPersona = (p: Persona) => {
-    setPersonaState(p);
-    localStorage.setItem("spendsense-persona", p);
+    try {
+      localStorage.setItem(PERSONA_KEY, p);
+    } catch {
+      /* private browsing: the choice just will not be remembered */
+    }
+    personaListeners.forEach((listener) => listener());
   };
 
   const fail = (e: unknown) => {
@@ -217,12 +248,13 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const value: Demo = {
     persona,
     setPersona,
-    loading,
-    loadError,
+    loading: current === null,
+    loadError: current?.error ?? null,
     balancePence: me?.account.balance_pence ?? 0,
     minimumPence: me?.account.minimum_payment_pence ?? 0,
     creditLimitPence: me?.account.credit_limit_pence ?? 0,
     availableCreditPence: me?.account.available_credit_pence ?? 0,
+    aprBasisPoints: me?.account.apr_basis_points ?? 0,
     dueDate: me ? longDate(me.account.due_date) : "",
     dueDateISO: me?.account.due_date ?? "",
     dueInDays: data?.dueInDays ?? 0,
@@ -253,4 +285,4 @@ export function useDemo() {
   if (!ctx) throw Error("DemoProvider missing");
   return ctx;
 }
-export const pounds = (pence: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(pence / 100);
+

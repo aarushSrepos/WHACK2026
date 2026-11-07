@@ -34,6 +34,12 @@ html[data-contrast="high"] {
   --ss-warning-border: #000000;
 }
 
+:root {
+  --font-geist-sans: "Geist Variable";
+  --font-lexend: "Lexend Variable";
+  --font-atkinson: "Atkinson Hyperlegible";
+}
+
 @theme inline {
   --color-navy: var(--ss-navy);
   --color-brand: var(--ss-blue);
