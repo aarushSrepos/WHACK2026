@@ -1,6 +1,10 @@
-"""AI layer, owned by C.
+"""C's AI layer. Claude writes words; Python owns numbers. Claude can propose, never confirm."""
+from .companion import ask
+from .actions import make_proposal, Proposal, ProposalError
+from .checker import verify, extract_pence, extract_percents
+from .templates import check_in_message
+from .cache import AnswerCache
+from .client import claude_llm
 
-The model writes the words; Python owns the numbers. This package will hold the
-Claude prompt, the number checker (reject any figure the engine did not produce),
-and the template fallback.
-"""
+__all__ = ["ask", "make_proposal", "Proposal", "ProposalError", "verify", "extract_pence",
+           "extract_percents", "check_in_message", "AnswerCache", "claude_llm"]
