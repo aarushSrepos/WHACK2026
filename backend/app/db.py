@@ -8,7 +8,7 @@ from contextlib import contextmanager
 
 from app.config import database_path
 
-TABLES = ["users", "transactions", "disputes", "payments", "pending_actions", "needs_profiles", "support_requests", "support_messages"]
+TABLES = ["users", "transactions", "disputes", "payments", "pending_actions", "needs_profiles", "support_requests", "support_messages", "statement_history"]
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -81,6 +81,18 @@ CREATE TABLE IF NOT EXISTS support_requests (
     status      TEXT NOT NULL CHECK (status IN ('open', 'in_progress', 'resolved')),
     created_at  TEXT NOT NULL,
     updated_at  TEXT NOT NULL
+);
+
+-- Past monthly statements: what the missed-payment model learns a customer's pattern from.
+CREATE TABLE IF NOT EXISTS statement_history (
+    persona                  TEXT NOT NULL REFERENCES users(persona),
+    months_ago               INTEGER NOT NULL,        -- 1 = last statement
+    statement_balance_pence  INTEGER NOT NULL,
+    minimum_pence            INTEGER NOT NULL,
+    paid_pence               INTEGER NOT NULL,
+    days_late                INTEGER NOT NULL,        -- 0 = paid on time
+    spend_pence              INTEGER NOT NULL,        -- spending that month
+    PRIMARY KEY (persona, months_ago)
 );
 
 -- Replies on a request. author 'note' is staff-only and never shown to the customer.

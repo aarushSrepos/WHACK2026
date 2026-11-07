@@ -12,7 +12,7 @@ from datetime import date, datetime, timezone
 
 from engine import credit
 
-from app import queries
+from app import payment_risk, queries
 from app.errors import ApiError
 from app.schemas import NeedsProfileUpdate
 
@@ -231,11 +231,14 @@ def staff_customers(conn) -> dict:
         open_count = conn.execute(
             "SELECT COUNT(*) FROM support_requests WHERE persona = ? AND status != 'resolved'", (user["persona"],)
         ).fetchone()[0]
+        risk = payment_risk.assess(conn, user["persona"])
         out.append({
             "persona": user["persona"],
             "display_name": user["display_name"],
             "needs_shared": get_needs(conn, user["persona"])["share_with_staff"],
             "open_requests": open_count,
+            "risk_percent": risk["percent"],
+            "risk_band": risk["band"],
         })
     return {"customers": out}
 
@@ -265,6 +268,7 @@ def staff_customer(conn, persona: str, today: date | None = None) -> dict:
             "card_paused": queries.card_paused(conn, persona),
             "monthly_limit_pence": account.spending_limit_pence,
         },
+        "risk": payment_risk.assess(conn, persona, today),
         "requests": [_request(conn, row, include_notes=True) for row in rows],
     }
 

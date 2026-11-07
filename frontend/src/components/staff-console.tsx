@@ -4,7 +4,7 @@ import { BankIcon } from "@/components/bank-icon";
 import { GuidanceList } from "@/components/guidance-list";
 import { pounds } from "@/components/demo-provider";
 import {
-  ApiError, staff, type ApiPersona, type Channel, type StaffCustomerView, type StaffRequestSummary,
+  ApiError, staff, type ApiPersona, type Channel, type MissedPaymentRisk, type RiskBand, type StaffCustomerView, type StaffRequestSummary,
   type SupportRequest, type SupportStatus,
 } from "@/lib/api";
 import { CHANNELS, CHANNEL_PHRASE, STAFF_STATUS_LABEL, timeAgo } from "@/lib/support-labels";
@@ -57,13 +57,15 @@ export function StaffConsole() {
               {!queue.loading && shown.length === 0 && <li className="staff-empty">Nothing here.</li>}
             </ul>
           </section>
+          <ReachOut customers={customers.data?.customers ?? []} onOpen={(p) => setSelected({ persona: p, requestId: null })} />
           <section aria-labelledby="customers-heading" className="mt-6">
             <h2 id="customers-heading" className="staff-section-title">Customers</h2>
             <ul className="staff-customers">
               {(customers.data?.customers ?? []).map((c) => <li key={c.persona}>
                 <button type="button" aria-current={selected?.persona === c.persona && selected.requestId === null ? "true" : undefined} onClick={() => setSelected({ persona: c.persona, requestId: null })}>
                   <span className="profile-avatar" aria-hidden="true">{c.display_name[0]}</span>
-                  <span><strong>{c.display_name}</strong><small>{c.needs_shared ? "Needs shared" : "Needs not shared"}{c.open_requests ? ` · ${c.open_requests} open` : ""}</small></span>
+                  <span className="flex-1"><strong>{c.display_name}</strong><small>{c.needs_shared ? "Needs shared" : "Needs not shared"}{c.open_requests ? ` · ${c.open_requests} open` : ""}</small></span>
+                  <span className={`risk-chip risk-${c.risk_band}`}>{c.risk_percent}%<span className="sr-only"> chance of missing next payment, {BAND_LABEL[c.risk_band]}</span></span>
                 </button>
               </li>)}
             </ul>
@@ -108,6 +110,8 @@ function CustomerPanel({ persona, requestId, onSelectRequest, onChanged }: {
         : <p className="readable-copy mt-3"><BankIcon name="lock" size={15} className="inline-block mr-1" /> {c.display_name} has not chosen to share their needs. Their contact choices are still enforced below. If they would like adjustments, they can add them on their Your needs page.</p>}
       <ChannelRow allowed={c.allowed_channels} />
     </section>
+
+    <RiskCard risk={c.risk} name={c.display_name} allowed={c.allowed_channels} preferred={c.needs?.preferred_channel ?? null} />
 
     <AccountSnapshot account={c.account} />
 
@@ -213,5 +217,57 @@ function RequestPanel({ customer, request, onUpdated }: { customer: StaffCustome
       </div>
       {!internal && <p className="text-sm text-muted mt-2">Delivery by email, text, letter or phone is simulated. Every reply also appears in the customer&apos;s app.</p>}
     </form>
+  </section>;
+}
+
+const BAND_LABEL: Record<RiskBand, string> = { low: "Low", medium: "Medium", high: "High" };
+
+/** Customers the model thinks may miss their next payment and who have not asked for help yet: reach out first. */
+function ReachOut({ customers, onOpen }: { customers: { persona: ApiPersona; display_name: string; open_requests: number; risk_percent: number; risk_band: RiskBand }[]; onOpen: (p: ApiPersona) => void }) {
+  const list = customers.filter((c) => c.risk_band !== "low" && c.open_requests === 0).sort((a, b) => b.risk_percent - a.risk_percent);
+  return <section aria-labelledby="reach-out-heading" className="mt-6">
+    <h2 id="reach-out-heading" className="staff-section-title">Might need help soon</h2>
+    <p className="text-xs text-muted mb-2">Medium or high chance of missing their next payment, and they have not asked for help.</p>
+    <ul className="staff-customers">
+      {list.map((c) => <li key={c.persona}><button type="button" onClick={() => onOpen(c.persona)}>
+        <span className="flex-1"><strong>{c.display_name}</strong><small>Offer help before they ask</small></span>
+        <span className={`risk-chip risk-${c.risk_band}`}>{c.risk_percent}%</span>
+      </button></li>)}
+      {list.length === 0 && <li className="staff-empty">No one right now.</li>}
+    </ul>
+  </section>;
+}
+
+/** The model's prediction, why it thinks so, and what to do: help, never penalise. */
+function RiskCard({ risk, name, allowed, preferred }: { risk: MissedPaymentRisk; name: string; allowed: Channel[]; preferred: Channel | null }) {
+  const [showModel, setShowModel] = useState(false);
+  const reach = preferred ?? (allowed.includes("email") ? "email" : "app");
+  const top = risk.drivers.filter((d) => Math.abs(d.impact) >= 0.05).slice(0, 4);
+  return <section className={`ss-card risk-card risk-card-${risk.band}`} aria-labelledby="risk-heading">
+    <div className="panel-title-row">
+      <div><p className="eyebrow on-light">EARLY SUPPORT · PREDICTION</p><h2 id="risk-heading">Chance {name} misses their next payment</h2></div>
+      <span className={`risk-chip risk-${risk.band}`}>{BAND_LABEL[risk.band]}</span>
+    </div>
+    <div className="risk-meter">
+      <strong className="risk-percent">{risk.percent}%</strong>
+      <div className="risk-bar" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={risk.percent} aria-label={`${risk.percent}% chance of missing the next payment`}>
+        <span style={{ width: `${Math.max(2, risk.percent)}%` }} />
+      </div>
+    </div>
+    <h3 className="risk-subhead">Why the model thinks this</h3>
+    <ul className="risk-drivers">
+      {top.map((d) => <li key={d.feature} className={d.effect === "raises" ? "raises" : "lowers"}>
+        <span aria-hidden="true">{d.effect === "raises" ? "▲" : "▼"}</span>
+        <span>{d.text}<span className="sr-only"> ({d.effect === "raises" ? "raises" : "lowers"} the chance)</span></span>
+      </li>)}
+    </ul>
+    <p className="risk-suggestion"><strong>Suggested next step:</strong> {risk.suggestion}
+      {risk.band !== "low" && <> Contact by {CHANNEL_PHRASE[reach]}{allowed.includes("phone") ? "" : ". Do not phone"}.</>}</p>
+    <p className="risk-guardrail"><BankIcon name="shield" size={14} className="inline-block mr-1" />For offering help early only. Never use this to lower limits, raise prices or make lending decisions. It uses account behaviour only, never the customer&apos;s needs or anything they told us.</p>
+    <button type="button" className="risk-model-toggle" aria-expanded={showModel} onClick={() => setShowModel((v) => !v)}>{showModel ? "Hide" : "About"} the model</button>
+    {showModel && <p className="text-sm text-muted mt-2">
+      {risk.model.kind}, trained with gradient descent on {risk.model.trained_on}. On customer-months it had not seen: AUC {risk.model.test_auc}, accuracy {Math.round(risk.model.test_accuracy * 100)}%.
+      {risk.model.synthetic_data && " The training data is synthetic (invented for this demo). A real model would be trained on the bank's own repayment history and tested for bias."}
+    </p>}
   </section>;
 }

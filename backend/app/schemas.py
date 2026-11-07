@@ -267,11 +267,41 @@ class StaffQueueResponse(BaseModel):
     requests: list[StaffRequestSummary]  # open first, then in progress, then resolved; oldest first within each
 
 
+class RiskDriver(BaseModel):
+    feature: str
+    label: str
+    value: str
+    effect: Literal["raises", "lowers"]
+    impact: float  # how far this pushes the score compared with an average customer
+    text: str
+
+
+class RiskModelInfo(BaseModel):
+    kind: str
+    trained_on: str
+    test_auc: float
+    test_accuracy: float
+    synthetic_data: bool
+
+
+class MissedPaymentRisk(BaseModel):
+    """How likely the customer is to miss their next payment. For offering help early, never for lending decisions."""
+
+    probability: float  # 0 to 1
+    percent: int
+    band: Literal["low", "medium", "high"]
+    drivers: list[RiskDriver]  # biggest effect first
+    suggestion: str
+    model: RiskModelInfo
+
+
 class StaffCustomerSummary(BaseModel):
     persona: Persona
     display_name: str
     needs_shared: bool
     open_requests: int
+    risk_percent: int
+    risk_band: Literal["low", "medium", "high"]
 
 
 class StaffCustomersResponse(BaseModel):
@@ -295,6 +325,7 @@ class StaffCustomerView(BaseModel):
     guidance: list[Guidance]
     allowed_channels: list[Channel]  # always enforced, even when the details are not shared
     account: StaffAccountSnapshot
+    risk: MissedPaymentRisk
     requests: list[SupportRequest]  # including staff-only notes
 
 

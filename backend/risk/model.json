@@ -1,0 +1,46 @@
+{
+  "kind": "logistic_regression",
+  "features": [
+    "utilisation",
+    "min_only_last_3",
+    "late_last_6",
+    "balance_growth",
+    "spend_ratio",
+    "paid_this_cycle"
+  ],
+  "intercept": -1.7485119468909145,
+  "weights": [
+    0.5370742825594181,
+    0.45108783491132964,
+    0.6081110955880685,
+    0.3623526386520169,
+    0.37516520696903194,
+    -1.0069536203261369
+  ],
+  "means": [
+    0.435786361883979,
+    1.226,
+    0.46066666666666667,
+    1.0237556577591462,
+    1.0254328202990473,
+    0.37433333333333335
+  ],
+  "stds": [
+    0.2312467985251707,
+    0.9870447473814615,
+    0.9301180331310407,
+    0.1421721291152016,
+    0.27614233387553244,
+    0.4839502958867665
+  ],
+  "metrics": {
+    "trained_on": "3000 synthetic customer-months",
+    "tested_on": "1000 held-out customer-months",
+    "test_accuracy": 0.873,
+    "test_auc": 0.879,
+    "test_log_loss": 0.336,
+    "baseline_log_loss": 0.54,
+    "missed_rate": 0.253,
+    "synthetic_data": true
+  }
+}

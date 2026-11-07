@@ -158,7 +158,18 @@ export type SupportRequest = {
 };
 export type Guidance = { kind: "contact" | "no_phone" | "letters" | "calls" | "helper" | "notes"; text: string };
 export type StaffRequestSummary = Omit<SupportRequest, "messages"> & { persona: ApiPersona; display_name: string; needs_shared: boolean };
-export type StaffCustomerSummary = { persona: ApiPersona; display_name: string; needs_shared: boolean; open_requests: number };
+export type RiskBand = "low" | "medium" | "high";
+export type MissedPaymentRisk = {
+  probability: number;
+  percent: number;
+  band: RiskBand;
+  drivers: { feature: string; label: string; value: string; effect: "raises" | "lowers"; impact: number; text: string }[];
+  suggestion: string;
+  model: { kind: string; trained_on: string; test_auc: number; test_accuracy: number; synthetic_data: boolean };
+};
+export type StaffCustomerSummary = {
+  persona: ApiPersona; display_name: string; needs_shared: boolean; open_requests: number; risk_percent: number; risk_band: RiskBand;
+};
 export type StaffCustomerView = {
   persona: ApiPersona;
   display_name: string;
@@ -174,6 +185,7 @@ export type StaffCustomerView = {
     card_paused: boolean;
     monthly_limit_pence: number | null;
   };
+  risk: MissedPaymentRisk;
   requests: SupportRequest[];
 };
 

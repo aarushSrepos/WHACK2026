@@ -93,6 +93,32 @@ REQUESTS = [
 ]
 
 
+# Six past statements per customer, newest first: (balance, minimum, paid, days late, spending), in pence.
+# Priya pays in full; Sam pays down steadily; Amara mostly pays the minimum; Alex's balance is climbing,
+# he pays only the minimum and has been late twice. The model scores them roughly low, low, medium, high. Every account is £620 today.
+HISTORY = {
+    "priya": [(61500, 3500, 61500, 0, 49000), (60500, 3500, 60500, 0, 50500), (61000, 3500, 61000, 0, 48000),
+              (59000, 3500, 59000, 0, 51000), (60000, 3500, 60000, 0, 49500), (58000, 3500, 58000, 0, 50000)],
+    "sam":   [(64000, 3500, 9000, 0, 52000), (66500, 3500, 9000, 0, 51000), (68000, 3500, 8000, 0, 53000),
+              (70000, 3500, 8000, 0, 50500), (71500, 3500, 7000, 0, 52500), (73000, 3500, 7000, 0, 51500)],
+    "amara": [(58000, 3500, 3500, 0, 43000), (57000, 3500, 6000, 0, 41500), (56000, 3500, 5000, 0, 42000),
+              (51500, 3500, 5000, 2, 40000), (50000, 3500, 6000, 0, 41000), (49000, 3500, 6000, 0, 40500)],
+    "alex":  [(55000, 3500, 3500, 3, 34000), (49000, 3500, 3500, 0, 33000), (44000, 3500, 3500, 6, 32500),
+              (41000, 3500, 3500, 0, 31000), (39500, 3500, 5000, 0, 30500), (38000, 3500, 5000, 0, 31000)],
+}
+
+
+def seed_history(conn) -> None:
+    for persona, months in HISTORY.items():
+        for months_ago, (balance, minimum, paid, late, spend) in enumerate(months, start=1):
+            conn.execute(
+                """INSERT INTO statement_history (persona, months_ago, statement_balance_pence, minimum_pence,
+                       paid_pence, days_late, spend_pence) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (persona, months_ago, balance, minimum, paid, late, spend),
+            )
+    conn.commit()
+
+
 def _ago(today: date, hours: int) -> str:
     noon = datetime.combine(today, time(12, 0), tzinfo=timezone.utc)
     return (noon - timedelta(hours=hours)).isoformat()
@@ -161,6 +187,7 @@ def seed(conn, today: date | None = None) -> None:
 
     conn.commit()
     seed_support(conn, today)
+    seed_history(conn)
 
 
 if __name__ == "__main__":

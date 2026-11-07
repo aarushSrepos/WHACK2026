@@ -28,6 +28,7 @@ The brief asks for hacks that help Capital One **help customers**, so there is a
 - **"How to help {customer}":** plain instructions built from the customer's needs, for example "Do not phone Sam. Calls are blocked", "Use Relay UK", "Send every letter in Easy Read" or "In their words: …". This is shown **only if the customer chose to share it**.
 - **Contact rules are enforced by the server.** Staff cannot reply by a channel the customer has not allowed. Trying to phone Alex returns "Alex has asked not to be contacted by phone call". This rule applies even when the customer has not shared their details.
 - Replies (delivery by email, text or letter is simulated) appear in the customer's app. Staff-only notes never do.
+- **Missed-payment prediction:** each customer shows a percentage chance of missing their next payment, the reasons ("Late with 2 of their last 6 payments", "Balance has grown 41%"), and a suggested next step that leads with help. "Might need help soon" lists customers at medium or high risk who haven't asked for help yet. See the section below.
 - Sign-in is a demo `X-Staff` header. A real bank would use staff login and roles.
 
 **Demo script:**
@@ -36,6 +37,29 @@ The brief asks for hacks that help Capital One **help customers**, so there is a
 3. On Statements, ask "What if I can't pay this month?" and accept the offer of help by text. The request appears in the staff queue.
 4. In the staff console, try to phone Alex: it's blocked. Reply in the app instead.
 5. Switch to Alex and open Get support: the reply is there, and the staff-only note isn't.
+
+### How the prediction works (`backend/risk/`)
+
+It's a **logistic regression** written from scratch in plain Python:
+
+1. `z = b0 + b1·x1 + … + b6·x6`
+2. `P(miss) = 1 / (1 + e^-z)`
+3. Training starts from random betas and repeats: predict, measure the log loss, then adjust each beta by gradient descent.
+
+| Feature (account behaviour only) | Effect |
+|---|---|
+| Credit used (balance ÷ limit) | raises |
+| Minimum-only payments, last 3 months | raises |
+| Late payments, last 6 months | raises |
+| Balance growth over 3 months | raises |
+| Spending in the last 30 days vs their usual month | raises |
+| Already paid this month's minimum | lowers |
+
+- **Retrain:** run `cd backend && python -m risk.train`. It takes about 2 seconds, rewrites `risk/model.json` and prints the held-out results. Currently that's AUC 0.88 and accuracy 87%, against 75% for always guessing "pays".
+- **The training data is synthetic.** It's invented by a documented rule in `train.py`, because we have no real repayment data. A real model would train on the bank's own history and be tested for bias.
+- **Fairness by design.** The model never sees the needs profile, disabilities, contact preferences or support requests. A test proves that changing these doesn't change the score.
+- **For helping only.** The staff console says so on the card: the score is never to be used for limits, pricing or lending decisions.
+- **It updates live.** If Alex pays his minimum in the customer app, his score in the staff console drops from about 92% to about 52% within a few seconds.
 
 ### Two safety rules
 
@@ -96,6 +120,7 @@ frontend/ (Next.js)          backend/ (FastAPI + SQLite)
   src/app/*        pages       app/main.py      routes (X-Persona header instead of login)
   src/components/  UI          app/actions.py   propose -> confirm, run once
                                app/support.py   needs profile, consent, contact rules, staff queue
+                               risk/            logistic regression: train.py, model.py, model.json
   src/lib/api.ts   API client  engine/          every number (balance, interest, minimum…)
   src/lib/accessibility-chat.ts  assistant rules  ai/        intent -> figures -> Claude or template -> number check
   src/app/api/accessibility-ai   optional AI for the assistant (opt-in)

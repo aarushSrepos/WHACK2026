@@ -797,3 +797,27 @@ html[data-contrast="high"] .staff-customers button, html[data-contrast="high"] .
 html[data-contrast="high"] .guidance-list li, html[data-contrast="high"] .thread-messages li, html[data-contrast="high"] .status-pill,
 html[data-contrast="high"] .staff-channels > span, html[data-contrast="high"] .staff-snapshot div, html[data-contrast="high"] .support-offer { background: #fff; color: #000; border: 1px solid #000; }
 html[data-contrast="high"] .guidance-list .guidance-no_phone, html[data-contrast="high"] .channel-blocked { border-width: 2px; }
+
+/* ---------- Missed-payment prediction (staff console) ---------- */
+.risk-chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.risk-low { background: #e8f5ec; color: #1f5f35; }
+.risk-medium { background: #fff4e0; color: #7a4d0d; }
+.risk-high { background: #fff0ee; color: #8a2a21; }
+.risk-card { border-left: 5px solid #2f8a4f; }
+.risk-card-medium { border-left-color: #d08a17; }
+.risk-card-high { border-left-color: var(--capital-one-red); }
+.risk-card h2 { font-size: 1.15rem; font-weight: 700; }
+.risk-meter { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
+.risk-percent { font-size: 2.2rem; line-height: 1; font-weight: 700; min-width: 4.2ch; }
+.risk-bar { flex: 1; height: 12px; border-radius: 999px; background: linear-gradient(90deg, #e8f5ec 0 20%, #fff4e0 20% 50%, #fff0ee 50% 100%); overflow: hidden; }
+.risk-bar span { display: block; height: 100%; background: var(--ss-navy); border-radius: 999px; }
+.risk-subhead { font-size: .8rem; font-weight: 700; margin: 16px 0 6px; }
+.risk-drivers { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .85rem; }
+.risk-drivers li { display: flex; gap: 9px; align-items: baseline; }
+.risk-drivers .raises span:first-child { color: var(--capital-one-red); }
+.risk-drivers .lowers span:first-child { color: #2f8a4f; }
+.risk-suggestion { margin-top: 14px; padding: 11px 13px; background: var(--ss-soft); border-radius: 6px; font-size: .85rem; }
+.risk-guardrail { margin-top: 10px; font-size: .72rem; color: var(--ss-muted); }
+.risk-model-toggle { margin-top: 6px; background: none; border: 0; padding: 4px 0; color: var(--capital-one-blue); font-size: .75rem; font-weight: 650; text-decoration: underline; }
+html[data-contrast="high"] .risk-chip, html[data-contrast="high"] .risk-suggestion { background: #fff; color: #000; border: 1px solid #000; }
+html[data-contrast="high"] .risk-bar { background: #fff; border: 1px solid #000; }
