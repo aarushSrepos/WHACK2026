@@ -21,8 +21,8 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def live_env(monkeypatch, tmp_path):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "test.db"))
-    monkeypatch.setenv("MOCK", "1")
-    monkeypatch.setenv("LIVE_ROUTES", "me,transactions,demo_reset,ask")
+    monkeypatch.setenv("MOCK", "0")
+    monkeypatch.delenv("LIVE_ROUTES", raising=False)
     monkeypatch.delenv("ENABLE_DEMO_ROUTES", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setattr(ai_glue, "CACHE", AnswerCache())  # a fresh cache for every test
@@ -216,7 +216,22 @@ def test_ask_without_an_api_key_never_calls_claude():
 
 def test_ask_with_an_api_key_builds_a_claude_caller(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-not-real")
-    assert callable(ai_glue.get_llm())  # building it makes no network call
+    monkeypatch.setattr(ai_glue, "claude_llm", lambda: (lambda system, user: "{}"))  # no package or network needed
+    assert callable(ai_glue.get_llm())
+
+
+def test_missing_claude_package_warns_once_and_falls_back(monkeypatch, caplog):
+    def broken():
+        raise ModuleNotFoundError("No module named 'anthropic'")
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-not-real")
+    monkeypatch.setattr(ai_glue, "claude_llm", broken)
+    monkeypatch.setattr(ai_glue, "_warned_about_claude", False)
+    with caplog.at_level("WARNING", logger="spendsense"):
+        assert ai_glue.get_llm() is None
+        assert ai_glue.get_llm() is None
+    warnings = [r for r in caplog.records if "pip install -r requirements.txt" in r.getMessage()]
+    assert len(warnings) == 1
 
 
 def test_good_ai_answer_is_shown_as_verified(monkeypatch):
@@ -255,8 +270,3 @@ def test_ai_cannot_invent_an_action(monkeypatch):
     assert body["proposed_action"] is None
     assert pending_rows() == []
 
-
-def test_routes_not_in_live_routes_still_return_mocks():
-    r = client.post("/actions", json={"type": "pay"})  # "actions" is not in LIVE_ROUTES above
-    assert r.status_code == 200
-    assert r.json()["action_id"] == "mock-pay"

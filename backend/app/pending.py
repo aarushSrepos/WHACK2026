@@ -8,7 +8,8 @@ import uuid
 from datetime import datetime, timezone
 
 # C's AI layer says "pause"; the API contract (schemas.py) says "pause_card".
-API_TYPE = {"pay": "pay", "dispute": "dispute", "pause": "pause_card"}
+# "unpause" is ours: C's layer never proposes it, but a customer can undo a pause with a button.
+API_TYPE = {"pay": "pay", "dispute": "dispute", "pause": "pause_card", "unpause": "unpause_card"}
 
 
 def save_proposal(conn, persona: str, proposal: dict) -> dict:

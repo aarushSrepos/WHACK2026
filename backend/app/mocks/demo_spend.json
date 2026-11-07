@@ -4,5 +4,6 @@
     "spent_this_month_pence": 32500,
     "percent_used": 81
   },
-  "threshold_crossed": 80
+  "threshold_crossed": 80,
+  "message": "You have used 81% of your £400.00 monthly limit. That is £325.00 so far. You can carry on, or pause your card for 24 hours."
 }

@@ -10,8 +10,11 @@ load_dotenv()  # loads backend/.env if it exists; does nothing otherwise
 
 
 def mock_default() -> bool:
-    """True when MOCK=1 (the default): routes return fixed JSON from app/mocks/."""
-    return os.getenv("MOCK", "1") == "1"
+    """True only when MOCK=1: routes then return fixed JSON from app/mocks/.
+
+    Every route is built now, so the default is the real thing (database, engine, AI layer).
+    """
+    return os.getenv("MOCK", "0") == "1"
 
 
 def live_routes() -> set[str]:

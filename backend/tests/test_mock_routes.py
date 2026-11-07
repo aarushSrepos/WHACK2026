@@ -143,18 +143,35 @@ def test_demo_routes_can_be_switched_off(monkeypatch):
     assert client.post("/demo/reset").status_code == 404
 
 
-def test_real_mode_says_501_until_a_route_is_built(monkeypatch):
-    # POST /actions is not built yet. When you build it, move this check to a route that still is unbuilt.
-    monkeypatch.setenv("MOCK", "0")
-    r = client.post("/actions", json={"type": "pay"})
-    assert r.status_code == 501
-    assert "not built yet" in r.json()["detail"]
+def test_default_mode_is_the_real_thing(monkeypatch):
+    monkeypatch.delenv("MOCK")  # no MOCK setting at all
+    assert client.get("/health").json()["mock"] is False
+    assert len(client.get("/transactions").json()["transactions"]) == 18  # the database, not the 8 mock rows
+    assert client.post("/actions", json={"type": "pay"}).json()["action_id"].startswith("act_")
+
+
+def test_mock_mode_gives_fixed_data():
+    assert len(client.get("/transactions").json()["transactions"]) == 8
+    assert client.post("/actions", json={"type": "pay"}).json()["action_id"] == "mock-pay"
 
 
 def test_live_routes_override_mock_mode(monkeypatch):
-    monkeypatch.setenv("LIVE_ROUTES", "actions")
-    assert client.post("/actions", json={"type": "pay"}).status_code == 501  # live, not built yet
-    assert client.get("/transactions").status_code == 200  # still mock
+    monkeypatch.setenv("LIVE_ROUTES", "transactions")
+    assert len(client.get("/transactions").json()["transactions"]) == 18  # live: from the database
+    assert client.post("/actions", json={"type": "pay"}).json()["action_id"] == "mock-pay"  # still mock
+
+
+def test_update_settings_in_mock_mode_keeps_fields_you_did_not_send():
+    r = client.put("/me/settings", headers=as_persona("priya"), json={"settings": {"text_size": "extra_large"}})
+    settings = r.json()["settings"]
+    assert settings["text_size"] == "extra_large"
+    assert settings["font"] == "dyslexia_friendly"  # Priya's own setting is untouched
+
+
+def test_demo_spend_mock_includes_the_check_in_wording():
+    body = client.post("/demo/spend", json={"merchant": "Test Shop", "amount_pence": 1500}).json()
+    assert body["threshold_crossed"] == 80
+    assert "pause your card for 24 hours" in body["message"]
 
 
 @pytest.mark.parametrize(

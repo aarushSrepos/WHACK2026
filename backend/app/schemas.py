@@ -155,6 +155,7 @@ class SpendRequest(BaseModel):
 class SpendResponse(BaseModel):
     spending: Spending
     threshold_crossed: Literal[80, 100] | None = None  # set when this purchase crossed a check-in line
+    message: str | None = None  # C's fixed, neutral check-in wording to show when a line was crossed
 
 
 class ResetResponse(BaseModel):

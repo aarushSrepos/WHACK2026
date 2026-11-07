@@ -4,7 +4,7 @@ The figures come from C's engine (backend/engine/credit.py). This file only turn
 rows into the engine's objects and the engine's numbers into the API's response shape.
 """
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 
 from engine import credit
 from engine.credit import Account, Transaction
@@ -12,6 +12,21 @@ from engine.credit import Account, Transaction
 
 def _user(conn, persona: str):
     return conn.execute("SELECT * FROM users WHERE persona = ?", (persona,)).fetchone()
+
+
+def _active_pause(user, now: datetime) -> str | None:
+    """The pause end time if the card is paused right now. A pause that has run out counts as off."""
+    until = user["card_paused_until"]
+    if not until:
+        return None
+    end = datetime.fromisoformat(until)
+    if end.tzinfo is None:  # stored without a time zone: treat it as UTC
+        end = end.replace(tzinfo=timezone.utc)
+    return until if end > now else None
+
+
+def card_paused(conn, persona: str, now: datetime | None = None) -> bool:
+    return _active_pause(_user(conn, persona), now or datetime.now(timezone.utc)) is not None
 
 
 def load_engine_inputs(conn, persona: str) -> tuple[Account, list[Transaction]]:
@@ -31,8 +46,9 @@ def load_engine_inputs(conn, persona: str) -> tuple[Account, list[Transaction]]:
     return account, [Transaction.from_row(row) for row in rows]
 
 
-def get_me(conn, persona: str, today: date | None = None) -> dict:
+def get_me(conn, persona: str, today: date | None = None, now: datetime | None = None) -> dict:
     today = today or date.today()
+    now = now or datetime.now(timezone.utc)
     user = _user(conn, persona)
     account, transactions = load_engine_inputs(conn, persona)
     spent = credit.month_spend_pence(transactions, today.year, today.month)
@@ -50,7 +66,7 @@ def get_me(conn, persona: str, today: date | None = None) -> dict:
             "minimum_payment_pence": credit.minimum_payment_pence(account.balance_pence, account.apr_bp),
             "due_date": account.due_date,
             "interest_estimate_pence": credit.interest_estimate_pence(account.balance_pence, account.apr_bp),
-            "card_paused_until": user["card_paused_until"],
+            "card_paused_until": _active_pause(user, now),
         },
         "spending": {
             "monthly_limit_pence": account.spending_limit_pence,

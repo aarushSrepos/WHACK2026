@@ -35,16 +35,19 @@ You should see every route. Click **Try it out** to call one.
 **Codespaces and the frontend:** in the **Ports** tab, right-click port 8000 and choose
 **Port Visibility → Public**. Without this the browser blocks the frontend's calls.
 
-## Mock mode (how the frontend builds before the backend exists)
+## Real mode and mock mode
 
-With `MOCK=1` (the default) every route returns fixed JSON from `backend/app/mocks/`.
-A can clone the repo, start the backend, and build against it straight away.
+Every route is built. **By default the backend uses the real code**: the SQLite database, C's engine
+and C's AI layer. The first request creates and seeds the database by itself.
+
+For frontend work with no database, set `MOCK=1` and every route returns fixed JSON from
+`backend/app/mocks/` instead.
 
 | Setting | Meaning |
 | --- | --- |
+| *(nothing set)* or `MOCK=0` | All routes use real code |
 | `MOCK=1` | All routes return mock JSON |
-| `MOCK=0` | All routes use real code; routes not built yet answer `501` |
-| `LIVE_ROUTES=me,transactions` | These routes use real code even when `MOCK=1` |
+| `MOCK=1` and `LIVE_ROUTES=me,transactions` | Only these routes use real code |
 | `ENABLE_DEMO_ROUTES=0` | Hides `/demo/*` |
 
 Send `X-Persona: priya`, `sam` or `amara` on each request instead of logging in.
@@ -95,8 +98,7 @@ python -m app.seed      # wipe the database and recreate Priya, Sam and Amara
   set of transactions too, so "why is my bill higher?" has something to compare with.
   This month adds up to £310.00 and last month to £186.00.
 
-**Built so far (real data):** `GET /me`, `GET /transactions`, `POST /demo/reset`, `POST /ask`.
-Turn the first three on with `LIVE_ROUTES=me,transactions,demo_reset` in `backend/.env`.
+`backend/app/figures.py` is an old stand-in that nothing uses any more. Delete it: `git rm backend/app/figures.py`.
 
 ## The AI layer (`/ask`)
 
@@ -109,20 +111,29 @@ C's `backend/ai/` does the thinking and `backend/app/ai_glue.py` connects it to 
 4. If the answer proposes an action, it is saved in `pending_actions` as `waiting` and the
    response carries its `action_id`. Nothing runs until the customer confirms.
 
-**Add `ask` to `LIVE_ROUTES` only together with `actions` and `confirm`.** Those two are not built
-yet, so the action ids that live `/ask` returns cannot be confirmed (mock mode uses `mock-...` ids).
-
 `/ask` figures also carry `kind` and `display` (the text to show or speak, like "£35.00"), and
 `value_days` for day counts. The action type for a card pause is `pause_card`.
 
-## Making the next route real (for B)
+## Actions (propose, then confirm)
 
-1. Find the `raise not_built("...")` line in `backend/app/main.py` for that route.
-2. Put the SQL in `backend/app/queries.py` and call it from the route, like `/me` does.
-3. Try it with that route name added to `LIVE_ROUTES` while the rest stay mock.
-4. Add a test in `backend/tests/test_live_routes.py`, run `pytest`, then open a pull request.
+`POST /actions` (or an `/ask` answer) saves a proposal in `pending_actions` and returns an `action_id`
+and a `read_back` sentence. `POST /actions/{id}/confirm` then runs it:
 
-Next in order: `POST /actions`, `POST /actions/{id}/confirm` (this is the important one), `PUT /me/settings`, `POST /demo/spend`.
+- It runs from the **saved** proposal. Anything in the confirm request body is ignored.
+- A second confirm returns the same receipt and does nothing twice.
+- Each persona only sees their own actions (another persona's id answers 404).
+- It checks the account again first. If things changed (balance dropped, charge already disputed) it answers 409 and runs nothing.
+- Receipts use `SIM-PAY-`, `SIM-CASE-`, `SIM-PAUSE-` and `SIM-UNPAUSE-` references. No real money moves.
+
+A card pause lasts 24 hours and shows in `/me` as `account.card_paused_until` until it runs out.
+`/demo/spend` is declined (409) while the card is paused. Cancelling a proposal is not built;
+an unconfirmed proposal just stays `waiting`.
+
+## Settings and the spending limit
+
+`PUT /me/settings` changes only the fields you send. The limit must be below the credit limit (400 if not).
+A limit cannot be cleared once set. `POST /demo/spend` adds a purchase; when it crosses 80% or 100%
+of the limit the response has `threshold_crossed` and a `message` from C's check-in wording.
 
 ## Tests
 
