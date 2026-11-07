@@ -27,6 +27,12 @@ def use_mock(route: str) -> bool:
     return mock_default()
 
 
+def database_path() -> str:
+    """Where the SQLite file lives. Defaults to backend/spendsense.db (git ignores it)."""
+    default = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "spendsense.db")
+    return os.getenv("DATABASE_PATH", default)
+
+
 def demo_enabled() -> bool:
     """The /demo/* routes are for rehearsals. Set ENABLE_DEMO_ROUTES=0 to switch them off."""
     return os.getenv("ENABLE_DEMO_ROUTES", "1") == "1"

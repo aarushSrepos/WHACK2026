@@ -13,7 +13,9 @@ Run with:  uvicorn app.main:app --reload   (from the backend/ folder)
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from app import queries
 from app.config import cors_origins, demo_enabled, live_routes, mock_default, use_mock
+from app.db import db
 from app.mock_data import load_mock
 from app.schemas import (
     ActionRequest,
@@ -28,6 +30,7 @@ from app.schemas import (
     SpendResponse,
     TransactionsResponse,
 )
+from app.seed import seed
 
 PERSONAS = ("priya", "sam", "amara")
 
@@ -99,9 +102,9 @@ def get_me(persona: str = Depends(get_persona)):
     """Settings, account figures and progress against the customer's own spending limit."""
     if use_mock("me"):
         return load_mock(f"me_{persona}")
-    # TODO(B): read this persona's row from SQLite and build a MeResponse.
-    # Take the figures from backend/engine (C's functions), do not calculate them here.
-    raise not_built("me")
+    # TODO(C): figures.py is a stand-in; switch to backend/engine when C's functions exist.
+    with db() as conn:
+        return queries.get_me(conn, persona)
 
 
 @app.put("/me/settings", response_model=MeResponse, tags=["account"])
@@ -127,8 +130,8 @@ def get_transactions(persona: str = Depends(get_persona)):
     """The statement's transactions, newest first."""
     if use_mock("transactions"):
         return load_mock("transactions")
-    # TODO(B): SELECT this persona's transactions ORDER BY date DESC.
-    raise not_built("transactions")
+    with db() as conn:
+        return queries.get_transactions(conn, persona)
 
 
 @app.post("/ask", response_model=AskResponse, tags=["companion"])
@@ -183,5 +186,6 @@ def demo_reset():
     """Rehearsal helper: put all three personas back to their starting data."""
     if use_mock("demo_reset"):
         return {"ok": True, "message": "Mock mode: nothing to reset."}
-    # TODO(B): re-run seed.py (delete the .db and rebuild it).
-    raise not_built("demo_reset")
+    with db() as conn:
+        seed(conn)
+    return {"ok": True, "message": "Demo data reset. Due date is five days from today."}

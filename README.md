@@ -76,12 +76,33 @@ In mock mode `/ask` picks a canned answer from keywords: "recognise" gives a dis
 Actions always take two steps: **propose** (returns an `action_id` and a `read_back` sentence),
 then **confirm**. Nothing moves money or opens a case before the confirm.
 
-## Making a route real (for B)
+## Database
+
+SQLite file at `backend/spendsense.db` (git ignores it). Tables: `users`, `transactions`,
+`disputes`, `payments`, `pending_actions`. They are defined in `backend/app/db.py`.
+
+```bash
+cd backend
+python -m app.seed      # wipe the database and recreate Priya, Sam and Amara
+```
+
+- The due date is always **five days from the day you seed**, so re-seed on demo day.
+- `POST /demo/reset` does the same thing from the running API.
+- A live route creates and seeds the database by itself the first time it is called.
+- `backend/app/figures.py` holds the money calculations for now. C's `backend/engine/` replaces it later.
+- "This month" in the demo means the last 30 days of transactions.
+
+**Built so far (real data):** `GET /me`, `GET /transactions`, `POST /demo/reset`.
+Turn them on with `LIVE_ROUTES=me,transactions,demo_reset` in `backend/.env`.
+
+## Making the next route real (for B)
 
 1. Find the `raise not_built("...")` line in `backend/app/main.py` for that route.
-2. Write the real code just above it. Follow the `TODO(B)` comment.
-3. Try it with `LIVE_ROUTES=that_route` in `backend/.env` while the rest stay mock.
-4. Add a test in `backend/tests/`, run `pytest`, then open a pull request.
+2. Put the SQL in `backend/app/queries.py` and call it from the route, like `/me` does.
+3. Try it with that route name added to `LIVE_ROUTES` while the rest stay mock.
+4. Add a test in `backend/tests/test_live_routes.py`, run `pytest`, then open a pull request.
+
+Next in order: `POST /actions`, `POST /actions/{id}/confirm`, `PUT /me/settings`, `POST /demo/spend`, then `/ask`.
 
 ## Tests
 

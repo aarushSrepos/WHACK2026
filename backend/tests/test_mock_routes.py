@@ -11,7 +11,8 @@ client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def clean_env(monkeypatch):
+def clean_env(monkeypatch, tmp_path):
+    monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "unused.db"))  # never touch the real .db
     monkeypatch.setenv("MOCK", "1")
     monkeypatch.delenv("LIVE_ROUTES", raising=False)
     monkeypatch.delenv("ENABLE_DEMO_ROUTES", raising=False)
@@ -143,16 +144,17 @@ def test_demo_routes_can_be_switched_off(monkeypatch):
 
 
 def test_real_mode_says_501_until_a_route_is_built(monkeypatch):
+    # /ask is not built yet. When you build a route, move this check to one that still is unbuilt.
     monkeypatch.setenv("MOCK", "0")
-    r = client.get("/me")
+    r = client.post("/ask", json={"question": "Why is my bill higher?"})
     assert r.status_code == 501
     assert "not built yet" in r.json()["detail"]
 
 
 def test_live_routes_override_mock_mode(monkeypatch):
-    monkeypatch.setenv("LIVE_ROUTES", "transactions")
-    assert client.get("/transactions").status_code == 501  # live, but not built yet
-    assert client.get("/me").status_code == 200  # still mock
+    monkeypatch.setenv("LIVE_ROUTES", "ask")
+    assert client.post("/ask", json={"question": "hello"}).status_code == 501  # live, not built yet
+    assert client.get("/transactions").status_code == 200  # still mock
 
 
 @pytest.mark.parametrize(
