@@ -1,323 +1,50 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useDemo } from "@/components/demo-provider";
-import { pounds } from "@/lib/money";
+import { useDemo, pounds } from "@/components/demo-provider";
 import { ReadAloudButton } from "@/components/read-aloud-button";
+import { BankIcon } from "@/components/bank-icon";
 import type { AskResponse } from "@/lib/api";
 
-export function DemoNotice() {
-  const { label } = useDemo();
-  return (
-    <p role="note" className="ss-card mb-6 font-semibold">
-      {label} — no real bank account is connected and no money will move.
-    </p>
-  );
-}
+export function DemoNotice() { return <div role="note" className="demo-notice"><BankIcon name="info" size={17}/> Interactive example only. These actions do not move real money or contact a bank.</div>; }
+export function DataGate({children}: {children:React.ReactNode}) { const {loading,loadError} = useDemo(); if(loading)return <div className="ss-card" role="status">Loading your account…</div>;if(loadError)return <div className="ss-card" role="alert">{loadError}</div>;return <>{children}</>; }
 
-/** Shows "loading" or "cannot reach the server" instead of the screen until the account has loaded. */
-export function DataGate({ children }: { children: React.ReactNode }) {
-  const { loading, loadError } = useDemo();
-  if (loading) return <p role="status" className="ss-card">Loading your account…</p>;
-  if (loadError)
-    return (
-      <p role="alert" className="ss-card border-2 border-brand font-semibold">
-        {loadError}
-      </p>
-    );
-  return <>{children}</>;
-}
-
-/** The result of the last action, and the review-and-confirm panel for a proposed one. */
 export function ConfirmAction() {
-  const { pending, cancel, confirm, notice } = useDemo();
-  const [busy, setBusy] = useState(false);
-  const run = async () => {
-    setBusy(true);
-    await confirm();
-    setBusy(false);
-  };
-  return (
-    <>
-      {notice && (
-        <p role={notice.kind === "error" ? "alert" : "status"} aria-live="polite" className="my-3 font-semibold">
-          {notice.text}
-        </p>
-      )}
-      {pending && (
-        <section role="region" aria-labelledby="confirm-heading" className="ss-card my-5 border-2 border-brand">
-          <h2 id="confirm-heading" className="text-xl font-bold">Review and confirm</h2>
-          <p className="my-3">{pending.readBack}</p>
-          <ReadAloudButton text={pending.readBack} what="what you are about to confirm" />
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button className="v2-button" disabled={busy} onClick={run}>Confirm action</button>
-            <button className="v2-button-alt" disabled={busy} onClick={cancel}>Cancel</button>
-          </div>
-          <p className="mt-3 text-sm">No time limit. Nothing happens until you confirm.</p>
-        </section>
-      )}
-    </>
-  );
+  const {pending,cancel,confirm,notice} = useDemo(); const [busy,setBusy] = useState(false);
+  const run = async () => {setBusy(true);await confirm();setBusy(false);};
+  return <>
+    {notice && <div role={notice.kind === "error" ? "alert" : "status"} className={`bank-status mt-4 ${notice.kind === "error" ? "bank-status-error" : ""}`}>{notice.text}</div>}
+    {pending && <section aria-labelledby="confirm-heading" className="ss-card bank-action-confirm mt-5"><p className="eyebrow on-light">ONE LAST STEP</p><h2 id="confirm-heading" className="mt-2">Review your request</h2><p className="mt-3 max-w-2xl">{pending.readBack}</p><div className="mt-3"><ReadAloudButton text={pending.readBack}/></div><div className="mt-5 flex flex-wrap gap-3"><button className="v2-button" disabled={busy} onClick={run}>{busy ? "Confirming…" : "Confirm demo action"} <BankIcon name="check" size={17}/></button><button className="v2-button-alt" disabled={busy} onClick={cancel}>Cancel</button></div><p className="mt-3 text-sm text-muted">Nothing happens until you confirm. No time limit.</p></section>}
+  </>;
 }
-
-function Receipts() {
-  const { receipts } = useDemo();
-  return (
-    <>
-      {receipts.map((r, i) => (
-        <p className="ss-card mt-3" key={i}>{r}</p>
-      ))}
-    </>
-  );
-}
+function Receipts() {const {receipts}=useDemo();return receipts.length > 0 ? <section className="ss-card mt-5" aria-label="Demo receipts"><p className="eyebrow on-light">RECENT CONFIRMATIONS</p>{receipts.map((r,i)=><p className="mt-3" key={i}><BankIcon name="check" size={15} className="inline-block mr-2 text-emerald-700"/>{r}</p>)}</section>:null;}
 
 export function StatementContent() {
-  const { transactions, balancePence, minimumPence, dueDate, ask, adopt, loading, loadError, persona } = useDemo();
-  const [detailed, setDetailed] = useState(false);
-  // The explanation is tagged with who and which format it was for, so a stale one is never shown.
-  const [explained, setExplained] = useState<{ key: string; answer: AskResponse | null } | null>(null);
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState<AskResponse | null>(null);
-  const [asking, setAsking] = useState(false);
-  const token = useRef(0);
-  const format = detailed ? "detailed" : "simple";
-  const key = `${persona}:${format}`;
-  const explain = explained?.key === key ? explained.answer : null;
+  const {transactions,balancePence,minimumPence,dueDate,ask,loading,loadError,persona}=useDemo();
+  const [detailed,setDetailed]=useState(false),[explain,setExplain]=useState<AskResponse|null>(null),[question,setQuestion]=useState(""),[answer,setAnswer]=useState<AskResponse|null>(null),[asking,setAsking]=useState(false),[search,setSearch]=useState("");
+  const token=useRef(0),currentAsk=useRef(ask),format=detailed?"detailed":"simple";
+  useEffect(()=>{currentAsk.current=ask;},[ask]);
+  useEffect(()=>{if(loading||loadError)return;const mine=++token.current;currentAsk.current("What does my statement balance mean?",format).then(r=>{if(mine===token.current)setExplain(r);});},[loading,loadError,format,persona]);
+  const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!question.trim())return;setAsking(true);setAnswer(null);const r=await ask(question.trim(),format);setAsking(false);if(r){setAnswer(r);}};
+  const shown=transactions.filter(t=>`${t.merchant} ${t.date} ${t.status}`.toLowerCase().includes(search.toLowerCase()));
+  return <DataGate><div className="statement-summary-grid"><div><p>STATEMENT BALANCE</p><strong>{pounds(balancePence)}</strong></div><div><p>MINIMUM PAYMENT</p><strong>{pounds(minimumPence)}</strong></div><div><p>PAYMENT DATE</p><strong>{dueDate}</strong></div></div>
+  <div className="tools-columns"><div>
+    <section className="ss-card" aria-labelledby="statement-explanation-heading"><div className="panel-title-row"><div><p className="eyebrow on-light">STATEMENT GUIDE</p><h2 id="statement-explanation-heading">Your balance, explained</h2></div><BankIcon name="book"/></div><div className="segmented" role="group" aria-label="Explanation detail"><button type="button" aria-pressed={!detailed} onClick={()=>setDetailed(false)}>Simple</button><button type="button" aria-pressed={detailed} onClick={()=>setDetailed(true)}>Detailed</button></div>{explain?<><p className="mt-4 readable-copy">{explain.answer}</p><p className="source-note"><BankIcon name="check" size={15}/>{explain.badge}</p><ReadAloudButton text={explain.answer}/></>:<p role="status" className="mt-4">Loading explanation…</p>}</section>
+    <section className="ss-card" aria-labelledby="transactions-heading"><div className="panel-title-row"><div><p className="eyebrow on-light">YOUR CARD ACTIVITY</p><h2 id="transactions-heading">All transactions</h2></div><span className="transaction-count">{transactions.length} items</span></div><label className="search-field"><BankIcon name="search" size={18}/><span className="sr-only">Search transactions</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search merchants, dates or status"/></label><ul className="statement-transactions">{shown.map(t=><li key={t.id}><div><strong>{t.merchant}</strong><span>{t.date} · {t.status === "pending" ? "Pending" : "Card purchase"}</span></div><strong>{pounds(t.amountPence)}</strong></li>)}{shown.length===0&&<li>No matching transactions found.</li>}</ul></section>
+  </div><div>
+    <form className="ss-card assistant-card" onSubmit={submit}><span className="assistant-symbol"><BankIcon name="sparkle"/></span><p className="eyebrow on-light">SPENDSENSE ASSIST</p><h2 className="mt-2">Ask about your money.</h2><p className="readable-copy mt-2">A straightforward way to understand your sample statement, without jargon.</p><label htmlFor="bill-question" className="block mt-5 mb-2 text-sm font-semibold">What would you like to know?</label><textarea id="bill-question" className="v2-input" maxLength={500} value={question} onChange={e=>setQuestion(e.target.value)} placeholder="e.g. When is my payment due?" rows={3}/><button className="v2-button mt-3 w-full" disabled={asking||!question.trim()}>{asking?"Checking your statement…":"Ask SpendSense"}<BankIcon name="arrow-right" size={16}/></button><div className="suggested-prompts"><p>POPULAR QUESTIONS</p>{["What is my minimum payment?","When is my bill due?","How much have I spent?"].map(q=><button key={q} type="button" onClick={()=>setQuestion(q)}>{q}<BankIcon name="arrow-up-right" size={13}/></button>)}</div>{answer&&<div className="assistant-response" role="status"><p className="eyebrow on-light">YOUR ANSWER</p><p>{answer.answer}</p><span>{answer.badge}</span><ReadAloudButton text={answer.answer}/></div>}</form>
 
-  // The explanation comes from the server: the engine works out the numbers and every figure is checked.
-  useEffect(() => {
-    if (loading || loadError) return;
-    const mine = ++token.current;
-    ask("Why is my bill higher this month?", format).then((r) => {
-      if (mine === token.current) setExplained({ key, answer: r });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, loadError, key]);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!question.trim()) return;
-    setAsking(true);
-    setAnswer(null);
-    const r = await ask(question.trim(), format);
-    setAsking(false);
-    if (r) {
-      setAnswer(r);
-      if (r.proposed_action) adopt(r.proposed_action);
-    }
-  };
-
-  return (
-    <DataGate>
-      <section className="ss-card space-y-4">
-        <h2 className="text-2xl font-bold">Explain my statement</h2>
-        <p>
-          Balance <strong>{pounds(balancePence)}</strong> · Minimum payment <strong>{pounds(minimumPence)}</strong> · Due {dueDate}
-        </p>
-        <div className="flex gap-3">
-          <button aria-pressed={!detailed} className="v2-button-alt" onClick={() => setDetailed(false)}>Simple</button>
-          <button aria-pressed={detailed} className="v2-button-alt" onClick={() => setDetailed(true)}>Detailed</button>
-        </div>
-        {explain ? (
-          <>
-            <p>{explain.answer}</p>
-            <p className="font-semibold">{explain.badge}</p>
-            <ReadAloudButton text={explain.answer} what="the explanation" />
-          </>
-        ) : explained?.key === key ? (
-          <p>We could not get an explanation right now. You can still ask a question below.</p>
-        ) : (
-          <p role="status">Working out your explanation…</p>
-        )}
-      </section>
-
-      <form onSubmit={submit} className="ss-card mt-5 space-y-3">
-        <h2 className="text-xl font-bold">Ask about your bill</h2>
-        <label htmlFor="bill-question">Your question</label>
-        <input
-          id="bill-question"
-          className="v2-input"
-          maxLength={500}
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Why is my bill higher? I don't recognise a charge. Pay the minimum."
-        />
-        <button className="v2-button" type="submit" disabled={asking || !question.trim()}>
-          {asking ? "Thinking…" : "Ask"}
-        </button>
-        {answer && (
-          <div role="status" className="rounded-xl bg-soft p-4 space-y-2">
-            <p>{answer.answer}</p>
-            <p className="text-sm font-semibold">{answer.badge}</p>
-            {answer.figures.length > 0 && (
-              <ul className="text-sm">
-                {answer.figures.map((f) => (
-                  <li key={f.id}>{f.label}: {f.display}</li>
-                ))}
-              </ul>
-            )}
-            <ReadAloudButton text={answer.answer} what="the answer" />
-          </div>
-        )}
-      </form>
-      <ConfirmAction />
-
-      <section className="ss-card mt-5">
-        <h2 className="text-xl font-bold">Recent transactions</h2>
-        <ul className="mt-3 divide-y divide-line">
-          {transactions.map((t) => (
-            <li key={t.id} className="flex justify-between gap-3 py-3">
-              <span>
-                {t.merchant}
-                <span className="block text-sm text-muted">
-                  {t.date}
-                  {t.status !== "posted" ? ` · ${t.status}` : ""}
-                </span>
-              </span>
-              <strong>{pounds(t.amountPence)}</strong>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </DataGate>
-  );
-}
-
-export function DisputeContent() {
-  const { transactions, propose } = useDemo();
-  const [selected, setSelected] = useState("");
-  const [reason, setReason] = useState("I do not recognise this charge");
-  const options = transactions.filter((t) => t.status !== "disputed");
-  const chosen = options.find((t) => t.id === selected) ?? options.find((t) => t.id === "tx_042") ?? options[0];
-  return (
-    <DataGate>
-      <section className="ss-card space-y-4">
-        <h2 className="text-xl font-bold">Dispute a charge without calling</h2>
-        {chosen ? (
-          <>
-            <label className="block" htmlFor="dispute-transaction">Choose a transaction</label>
-            <select id="dispute-transaction" className="v2-input" value={chosen.id} onChange={(e) => setSelected(e.target.value)}>
-              {options.map((t) => (
-                <option value={t.id} key={t.id}>{t.merchant} — {pounds(t.amountPence)} — {t.date}</option>
-              ))}
-            </select>
-            <label className="block" htmlFor="dispute-reason">Reason</label>
-            <textarea id="dispute-reason" className="v2-input" maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
-            <button className="v2-button" onClick={() => propose({ type: "dispute", transactionId: chosen.id, reason })}>
-              Review dispute
-            </button>
-          </>
-        ) : (
-          <p>There are no charges left to dispute.</p>
-        )}
-      </section>
-      <ConfirmAction />
-      <Receipts />
-      {transactions.some((t) => t.status === "disputed") && (
-        <section className="ss-card mt-5">
-          <h2 className="text-xl font-bold">Charges you have questioned</h2>
-          <ul className="mt-3 divide-y divide-line">
-            {transactions.filter((t) => t.status === "disputed").map((t) => (
-              <li key={t.id} className="flex justify-between gap-3 py-3">
-                <span>{t.merchant}<span className="block text-sm text-muted">{t.date} · dispute open</span></span>
-                <strong>{pounds(t.amountPence)}</strong>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </DataGate>
-  );
+  </div></div><ConfirmAction/></DataGate>;
 }
 
 export function PaymentContent() {
-  const { minimumPence, balancePence, propose, dueDate } = useDemo();
-  // null = the customer has not typed anything yet, so show the minimum. An empty box stays empty.
-  const [amount, setAmount] = useState<string | null>(null);
-  const shown = amount ?? (minimumPence / 100).toFixed(2);
-  const pence = shown.trim() === "" ? NaN : Math.round(Number(shown) * 100);
-  return (
-    <DataGate>
-      <section className="ss-card space-y-4">
-        <h2 className="text-xl font-bold">Make a simulated payment</h2>
-        <p>Balance: {pounds(balancePence)}. Minimum payment: {pounds(minimumPence)}. Due {dueDate}.</p>
-        <label htmlFor="payment-amount" className="block">Payment amount in pounds</label>
-        <input
-          id="payment-amount"
-          className="v2-input"
-          type="number"
-          min="0.01"
-          step="0.01"
-          inputMode="decimal"
-          value={shown}
-          onChange={(e) => setAmount(e.target.value)}
-        />
-        <div className="flex flex-wrap gap-3" role="group" aria-label="Quick amounts">
-          <button type="button" className="v2-button-alt" onClick={() => setAmount((minimumPence / 100).toFixed(2))}>
-            Minimum ({pounds(minimumPence)})
-          </button>
-          <button type="button" className="v2-button-alt" onClick={() => setAmount((balancePence / 100).toFixed(2))}>
-            Full balance ({pounds(balancePence)})
-          </button>
-        </div>
-        <button
-          className="v2-button"
-          disabled={!Number.isFinite(pence) || pence <= 0 || pence > balancePence}
-          onClick={() => propose({ type: "pay", amountPence: pence })}
-        >
-          Review payment
-        </button>
-        {Number.isFinite(pence) && pence > balancePence && (
-          <p role="status">That is more than your balance of {pounds(balancePence)}.</p>
-        )}
-      </section>
-      <ConfirmAction />
-      <Receipts />
-    </DataGate>
-  );
+  const {minimumPence,balancePence,propose,dueDate}=useDemo();const [amount,setAmount]=useState("");const value=amount===""?minimumPence/100:Number(amount);const pence=Math.round(value*100);
+  return <DataGate><div className="tools-columns"><section className="ss-card"><p className="eyebrow on-light">NEW PAYMENT</p><h2 className="mt-2">Choose your amount</h2><p className="readable-copy mt-2 mb-5">You can pay the minimum or any amount up to your balance. This demo doesn&apos;t collect payment details.</p><div className="payment-options"><button type="button" aria-pressed={pence===minimumPence} onClick={()=>setAmount(String(minimumPence/100))}><span>Minimum payment</span><strong>{pounds(minimumPence)}</strong></button><button type="button" aria-pressed={pence===balancePence} onClick={()=>setAmount(String(balancePence/100))}><span>Full balance</span><strong>{pounds(balancePence)}</strong></button></div><label htmlFor="payment-amount" className="block mt-5 mb-2 font-semibold">Other amount (£)</label><input id="payment-amount" className="v2-input" type="number" min="0.01" max={balancePence/100} step="0.01" value={amount===""?String(minimumPence/100):amount} onChange={e=>setAmount(e.target.value)}/><p className="text-sm text-muted mt-2">For demonstration only. No real funds will be transferred.</p><button className="v2-button mt-5" disabled={!Number.isFinite(pence)||pence<=0||pence>balancePence} onClick={()=>propose({type:"pay",amountPence:pence})}>Review payment <BankIcon name="arrow-right" size={16}/></button></section><div><section className="ss-card"><p className="eyebrow on-light">ACCOUNT SUMMARY</p><h2 className="mt-2">Your next payment</h2><dl className="payment-summary"><div><dt>Outstanding balance</dt><dd>{pounds(balancePence)}</dd></div><div><dt>Minimum due</dt><dd>{pounds(minimumPence)}</dd></div><div><dt>Due date</dt><dd>{dueDate}</dd></div><div><dt>Payment method</dt><dd>Demo only</dd></div></dl></section></div></div><ConfirmAction/><Receipts/></DataGate>;
 }
 
 export function LimitContent() {
-  const { monthlyLimitPence, setMonthlyLimit, spentPence, percentUsed, demoSpend, paused, propose, reset, creditLimitPence } = useDemo();
-  // null = not edited, so the box shows the saved limit.
-  const [edited, setEdited] = useState<string | null>(null);
-  const draft = edited ?? (monthlyLimitPence ? String(monthlyLimitPence / 100) : "");
-  const percent = percentUsed === null ? null : Math.round(percentUsed);
-  const draftNumber = Number(draft);
-  return (
-    <DataGate>
-      <section className="ss-card space-y-4">
-        <h2 className="text-xl font-bold">Your monthly spending limit</h2>
-        <label htmlFor="limit">My monthly limit (£)</label>
-        <input className="v2-input" id="limit" type="number" min="1" step="1" value={draft} onChange={(e) => setEdited(e.target.value)} />
-        <p className="text-sm">Your limit is your own choice and needs to be below your credit limit of {pounds(creditLimitPence)}.</p>
-        <button className="v2-button" disabled={!(draftNumber > 0) || draftNumber * 100 === monthlyLimitPence} onClick={async () => { if (await setMonthlyLimit(draftNumber)) setEdited(null); }}>
-          Save limit
-        </button>
-        {monthlyLimitPence === null || percent === null ? (
-          <p>You have not set a limit yet. Spent this month: {pounds(spentPence)}.</p>
-        ) : (
-          <>
-            <p>Spent this month: {pounds(spentPence)} of {pounds(monthlyLimitPence)} ({percent}%).</p>
-            <progress className="w-full" max={100} value={Math.min(100, percent)} aria-label="Monthly spending limit progress" />
-          </>
-        )}
-        <button className="v2-button-alt" onClick={() => demoSpend(4000)}>Simulate a £40 purchase</button>
-        {percent !== null && percent >= 80 && (
-          <div role="status" className="rounded-xl border border-line bg-soft p-4">
-            <strong>A quick check-in</strong>
-            <p>You have used {percent}% of the limit you chose. You can review your spending or pause your demo card. You are in control.</p>
-          </div>
-        )}
-        <button
-          className="v2-button mt-3"
-          onClick={() => propose({ type: paused ? "unpause_card" : "pause_card" })}
-        >
-          {paused ? "Turn card back on" : "Pause card for 24 hours"}
-        </button>
-        {paused && <p role="status" className="font-semibold">Your demo card is paused.</p>}
-      </section>
-      <ConfirmAction />
-      <button className="v2-button-alt mt-5" onClick={reset}>Reset demo data</button>
-    </DataGate>
-  );
+  const {monthlyLimitPence,setMonthlyLimit,spentPence,percentUsed,demoSpend,paused,propose,reset,creditLimitPence}=useDemo();const [draft,setDraft]=useState("");
+  // Update the draft when an account loads or its saved limit changes.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(()=>setDraft(monthlyLimitPence?String(monthlyLimitPence/100):""),[monthlyLimitPence]);const percent=percentUsed===null?null:Math.round(percentUsed),draftNumber=Number(draft);
+  return <DataGate><div className="tools-columns"><section className="ss-card"><p className="eyebrow on-light">STAY IN CONTROL</p><h2 className="mt-2">Monthly spending limit</h2><p className="readable-copy mt-2 mb-5">Set a personal guide for monthly spending. It&apos;s separate from your card&apos;s credit limit.</p><label htmlFor="limit" className="block mb-2 font-semibold">Your monthly limit (£)</label><input id="limit" className="v2-input" type="number" min="1" max={creditLimitPence/100} step="1" placeholder="Enter amount" value={draft} onChange={e=>setDraft(e.target.value)}/><p className="text-sm text-muted mt-2">Choose up to {pounds(creditLimitPence)}.</p><button className="v2-button mt-4" disabled={!(draftNumber>0&&draftNumber<=creditLimitPence/100)||draftNumber*100===monthlyLimitPence} onClick={()=>setMonthlyLimit(draftNumber)}>Save spending limit</button>{monthlyLimitPence!==null&&percent!==null?<div className="limit-progress-box"><div className="limit-progress-head"><span>Spent this month</span><strong>{pounds(spentPence)}</strong></div><progress className="w-full" max={100} value={Math.min(100,percent)} aria-label="Your spending against your personal limit"/><p>{percent}% of {pounds(monthlyLimitPence)} personal limit</p></div>:<p className="mt-5 text-sm text-muted">You haven&apos;t set a limit yet. You&apos;ve spent {pounds(spentPence)} in this sample month.</p>}{percent!==null&&percent>=80&&<div className="bank-status mt-4" role="status">You&apos;ve used {percent}% of your chosen spending limit. Review your spending at your own pace.</div>}</section><div><section className="ss-card"><p className="eyebrow on-light">CARD SECURITY</p><h2 className="mt-2">Card controls</h2><div className="card-status-line"><BankIcon name="credit" size={21}/><div><strong>SpendSense card · 4242</strong><span><i className={`status-dot ${paused?"status-paused":""}`}/>{paused?"Paused":"Active"}</span></div></div><p className="readable-copy mt-4">{paused?"Your sample card is paused. Turn it back on whenever you're ready.":"Pause your sample card if you want a break from spending."}</p><button className="v2-button-alt mt-4" onClick={()=>propose({type:paused?"unpause_card":"pause_card"})}><BankIcon name={paused?"check":"pause"} size={16}/>{paused?"Resume sample card":"Pause sample card"}</button></section><section className="ss-card"><p className="eyebrow on-light">DEMO CONTROLS</p><h2 className="mt-2">Try a scenario</h2><p className="readable-copy mt-2">Add a sample £40 purchase to see your limit update, or restore the original account.</p><div className="mt-4 flex flex-wrap gap-2"><button className="v2-button-alt" onClick={()=>demoSpend(4000)}>Add £40 purchase</button><button className="v2-button-alt" onClick={reset}><BankIcon name="reset" size={15}/> Reset demo</button></div></section></div></div><ConfirmAction/></DataGate>;
 }

@@ -1,13 +1,8 @@
 import type { Metadata, Viewport } from "next";
-// Fonts are bundled from npm (not fetched from Google at build time), so the app builds and runs offline.
-import "@fontsource-variable/geist";
-import "@fontsource-variable/lexend";
-import "@fontsource/atkinson-hyperlegible/400.css";
-import "@fontsource/atkinson-hyperlegible/700.css";
+
 import { DemoProvider } from "@/components/demo-provider";
 import { AccessibilityProvider } from "@/components/accessibility-provider";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { AppExperience } from "@/components/app-experience";
 import { BOOT_SCRIPT } from "@/lib/accessibility";
 import "./globals.css";
 
@@ -22,10 +17,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b1f3a",
+  themeColor: "#004977",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
@@ -35,19 +30,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       data-font="default"
       data-motion="system"
       data-language="detailed"
+      data-reading-spacing="standard"
+      data-large-targets="false"
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body>
         <AccessibilityProvider><DemoProvider>
           <a href="#main" className="skip-link">
             Skip to main content
           </a>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">{children}</div>
-          <SiteFooter />
+          <AppExperience>{children}</AppExperience>
         </DemoProvider></AccessibilityProvider>
       </body>
     </html>

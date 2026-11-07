@@ -1,0 +1,21 @@
+"use client";
+
+import { useAccessibility } from "@/components/accessibility-provider";
+import { AccessibilityWorkspace } from "@/components/accessibility-workspace";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
+
+export function AppExperience({ children }: { children: React.ReactNode }) {
+  const { ready, setupComplete } = useAccessibility();
+  if (!ready) {
+    return <main id="main" className="setup-loading" role="status"><span className="setup-loading-mark" aria-hidden="true" />Preparing your experience…</main>;
+  }
+  if (!setupComplete) return <AccessibilityWorkspace mode="onboarding" />;
+  return <div className="bank-shell">
+    <SiteHeader />
+    <div className="bank-workspace">
+      <div className="bank-content">{children}</div>
+      <SiteFooter />
+    </div>
+  </div>;
+}

@@ -6,6 +6,7 @@ export const fonts = ["default", "lexend", "atkinson"] as const;
 export const languages = ["simple", "detailed"] as const;
 export const motions = ["system", "reduce"] as const;
 export const speechRates = ["slow", "normal", "fast"] as const;
+export const readingSpacings = ["standard", "relaxed"] as const;
 
 export type TextSize = (typeof textSizes)[number];
 export type Contrast = (typeof contrasts)[number];
@@ -13,6 +14,7 @@ export type FontChoice = (typeof fonts)[number];
 export type Language = (typeof languages)[number];
 export type Motion = (typeof motions)[number];
 export type SpeechRate = (typeof speechRates)[number];
+export type ReadingSpacing = (typeof readingSpacings)[number];
 
 export type AccessibilitySettings = {
   textSize: TextSize;
@@ -23,6 +25,8 @@ export type AccessibilitySettings = {
   speechEnabled: boolean;
   speechRate: SpeechRate;
   speakConfirmations: boolean;
+  readingSpacing: ReadingSpacing;
+  largeTargets: boolean;
 };
 
 export const defaultSettings: AccessibilitySettings = {
@@ -34,6 +38,8 @@ export const defaultSettings: AccessibilitySettings = {
   speechEnabled: true,
   speechRate: "normal",
   speakConfirmations: false,
+  readingSpacing: "standard",
+  largeTargets: false,
 };
 
 const speechRateValues: Record<SpeechRate, number> = {
@@ -81,6 +87,8 @@ export function sanitizeSettings(value: unknown): AccessibilitySettings {
       typeof record.speakConfirmations === "boolean"
         ? record.speakConfirmations
         : defaultSettings.speakConfirmations,
+    readingSpacing: oneOf(record.readingSpacing, readingSpacings, defaultSettings.readingSpacing),
+    largeTargets: typeof record.largeTargets === "boolean" ? record.largeTargets : defaultSettings.largeTargets,
   };
 }
 
@@ -95,7 +103,11 @@ export function loadSettings(): AccessibilitySettings {
 }
 
 export function saveSettings(settings: AccessibilitySettings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // Browsers in private mode can reject storage; changes still apply this session.
+  }
 }
 
 export function applyToDocument(settings: AccessibilitySettings): void {
@@ -105,6 +117,8 @@ export function applyToDocument(settings: AccessibilitySettings): void {
   root.dataset.font = settings.font;
   root.dataset.motion = settings.motion;
   root.dataset.language = settings.language;
+  root.dataset.readingSpacing = settings.readingSpacing;
+  root.dataset.largeTargets = String(settings.largeTargets);
 }
 
 const valueLabels: Record<string, string> = {
@@ -122,12 +136,20 @@ const valueLabels: Record<string, string> = {
   slow: "slower",
   normal: "normal",
   fast: "faster",
+  relaxed: "comfortable spacing",
 };
 
 export function describeChange(patch: Partial<AccessibilitySettings>): string {
   const keys = Object.keys(patch) as (keyof AccessibilitySettings)[];
-  if (keys.length !== 1) {
-    return "Settings are back to the starting choices.";
+  if (keys.length === 0) return "No settings changed.";
+  if (keys.length > 1) {
+    return `Updated ${keys.map((key) => {
+      const value = patch[key];
+      if (key === "speechEnabled") return `read-aloud ${value ? "on" : "off"}`;
+      if (key === "speakConfirmations") return `spoken confirmations ${value ? "on" : "off"}`;
+      if (key === "largeTargets") return `larger controls ${value ? "on" : "off"}`;
+      return `${key.replace(/([A-Z])/g, " $1").toLowerCase()} to ${valueLabels[String(value)] ?? String(value)}`;
+    }).join(", ")}.`;
   }
 
   const key = keys[0];
@@ -142,6 +164,7 @@ export function describeChange(patch: Partial<AccessibilitySettings>): string {
       ? "Spoken confirmations are on."
       : "Spoken confirmations are off.";
   }
+  if (key === "largeTargets") return value ? "Larger buttons and controls are on." : "Standard button and control sizes are on.";
 
   const names: Record<string, string> = {
     textSize: "Text size",
@@ -150,9 +173,10 @@ export function describeChange(patch: Partial<AccessibilitySettings>): string {
     language: "Language",
     motion: "Motion",
     speechRate: "Speech speed",
+    readingSpacing: "Reading spacing",
   };
 
   return `${names[key] ?? "Setting"} is now ${valueLabels[String(value)] ?? String(value)}.`;
 }
 
-export const BOOT_SCRIPT = `(function(){try{var raw=localStorage.getItem(${JSON.stringify(STORAGE_KEY)});if(!raw)return;var s=JSON.parse(raw);var root=document.documentElement;var pairs=[["textSize","textSize"],["contrast","contrast"],["font","font"],["motion","motion"],["language","language"]];for(var i=0;i<pairs.length;i++){var key=pairs[i][0];if(typeof s[key]==="string")root.dataset[key]=s[key];}}catch(e){}})();`;
+export const BOOT_SCRIPT = `(function(){try{var raw=localStorage.getItem(${JSON.stringify(STORAGE_KEY)});if(!raw)return;var s=JSON.parse(raw);var root=document.documentElement;var pairs=[["textSize","textSize"],["contrast","contrast"],["font","font"],["motion","motion"],["language","language"],["readingSpacing","readingSpacing"],["largeTargets","largeTargets"]];for(var i=0;i<pairs.length;i++){var key=pairs[i][0];if(typeof s[key]==="string")root.dataset[key]=s[key];}}catch(e){}})();`;
