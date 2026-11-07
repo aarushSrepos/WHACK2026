@@ -8,7 +8,7 @@ from contextlib import contextmanager
 
 from app.config import database_path
 
-TABLES = ["users", "transactions", "disputes", "payments", "pending_actions"]
+TABLES = ["users", "transactions", "disputes", "payments", "pending_actions", "needs_profiles", "support_requests", "support_messages"]
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -61,6 +61,37 @@ CREATE TABLE IF NOT EXISTS pending_actions (
     status        TEXT NOT NULL,                      -- waiting, done, cancelled
     result_json   TEXT,                               -- what confirm returned, so a second confirm repeats it
     created_at    TEXT NOT NULL
+);
+
+-- "Tell us once": how the customer wants to be contacted and supported.
+CREATE TABLE IF NOT EXISTS needs_profiles (
+    persona           TEXT PRIMARY KEY REFERENCES users(persona),
+    profile_json      TEXT NOT NULL,                  -- channels, letter format, call adjustments, ...
+    share_with_staff  INTEGER NOT NULL DEFAULT 0,     -- 1 = staff may see the details
+    updated_at        TEXT NOT NULL
+);
+
+-- A customer asking a person for help. Staff work through these in the staff console.
+CREATE TABLE IF NOT EXISTS support_requests (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    persona     TEXT NOT NULL REFERENCES users(persona),
+    topic       TEXT NOT NULL,
+    message     TEXT,
+    channel     TEXT NOT NULL,                        -- how the customer asked us to reply
+    status      TEXT NOT NULL CHECK (status IN ('open', 'in_progress', 'resolved')),
+    created_at  TEXT NOT NULL,
+    updated_at  TEXT NOT NULL
+);
+
+-- Replies on a request. author 'note' is staff-only and never shown to the customer.
+CREATE TABLE IF NOT EXISTS support_messages (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id  INTEGER NOT NULL REFERENCES support_requests(id),
+    author      TEXT NOT NULL CHECK (author IN ('customer', 'staff', 'note')),
+    text        TEXT NOT NULL,
+    channel     TEXT,
+    staff_name  TEXT,
+    created_at  TEXT NOT NULL
 );
 """
 

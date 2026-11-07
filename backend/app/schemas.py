@@ -117,6 +117,9 @@ class AskResponse(BaseModel):
     verified: bool  # True = every number in the answer was checked against `figures`
     badge: str  # text for the badge: "Verified figures" or "Standard explanation"
     proposed_action: ProposedAction | None = None
+    # True when the customer seems to be struggling (e.g. "I can't pay"): the app offers to put them
+    # in touch with a person, on their terms. Nothing is sent unless they choose to.
+    support_offer: bool = False
 
 
 # ---------- POST /actions and POST /actions/{id}/confirm ----------
@@ -161,3 +164,145 @@ class SpendResponse(BaseModel):
 class ResetResponse(BaseModel):
     ok: bool
     message: str
+
+
+# ---------- "Tell us once": the needs profile (GET/PUT /me/needs) ----------
+
+Channel = Literal["app", "email", "text", "letter", "phone"]
+LetterFormat = Literal["standard", "large_print", "braille", "easy_read", "audio"]
+CallAdjustment = Literal["extra_time", "speak_slowly", "relay_uk", "agreed_times", "same_person"]
+
+
+class NeedsProfileUpdate(BaseModel):
+    """How the customer wants us to contact and support them. Every field is optional to fill in."""
+
+    channels: list[Channel] = Field(default_factory=lambda: ["app", "email", "letter", "phone"])
+    preferred_channel: Channel = "app"
+    letter_format: LetterFormat = "standard"
+    call_adjustments: list[CallAdjustment] = Field(default_factory=list)
+    helper_name: str | None = Field(default=None, max_length=80)  # someone who helps manage their money
+    notes: str | None = Field(default=None, max_length=300)  # in their own words
+    share_with_staff: bool = False  # nothing above is shown to staff unless this is True
+
+    @model_validator(mode="after")
+    def tidy(self):
+        # In-app messages always work: they are how we reply inside SpendSense.
+        channels = ["app"] + [c for c in dict.fromkeys(self.channels) if c != "app"]
+        self.channels = channels
+        if self.preferred_channel not in channels:
+            raise ValueError("Your preferred way to be contacted must be one of the ways you allow")
+        self.call_adjustments = list(dict.fromkeys(self.call_adjustments))
+        self.helper_name = (self.helper_name or "").strip() or None
+        self.notes = (self.notes or "").strip() or None
+        return self
+
+
+class NeedsProfile(NeedsProfileUpdate):
+    updated_at: datetime | None = None
+
+
+# ---------- Support requests (customer side) ----------
+
+SupportTopic = Literal["struggling_to_pay", "understanding_account", "accessibility", "something_else"]
+SupportStatus = Literal["open", "in_progress", "resolved"]
+
+
+class SupportRequestCreate(BaseModel):
+    topic: SupportTopic
+    message: str | None = Field(default=None, max_length=500)
+    channel: Channel = "app"  # how the customer wants us to get back to them
+
+
+class CustomerReply(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
+
+
+class SupportMessage(BaseModel):
+    id: int
+    author: Literal["customer", "staff", "note"]  # "note" = staff-only, never sent to the customer
+    text: str
+    channel: Channel | None = None
+    staff_name: str | None = None
+    created_at: datetime
+
+
+class SupportRequest(BaseModel):
+    id: int
+    topic: SupportTopic
+    topic_label: str
+    message: str | None = None
+    channel: Channel
+    status: SupportStatus
+    created_at: datetime
+    updated_at: datetime
+    messages: list[SupportMessage]
+
+
+class SupportRequestsResponse(BaseModel):
+    requests: list[SupportRequest]  # newest first
+
+
+# ---------- Staff console (/staff/*) ----------
+
+class Guidance(BaseModel):
+    kind: Literal["contact", "no_phone", "letters", "calls", "helper", "notes"]
+    text: str  # a plain instruction for the agent: "Do not phone. Use text or email."
+
+
+class StaffRequestSummary(BaseModel):
+    id: int
+    persona: Persona
+    display_name: str
+    topic: SupportTopic
+    topic_label: str
+    message: str | None = None
+    channel: Channel
+    status: SupportStatus
+    needs_shared: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class StaffQueueResponse(BaseModel):
+    requests: list[StaffRequestSummary]  # open first, then in progress, then resolved; oldest first within each
+
+
+class StaffCustomerSummary(BaseModel):
+    persona: Persona
+    display_name: str
+    needs_shared: bool
+    open_requests: int
+
+
+class StaffCustomersResponse(BaseModel):
+    customers: list[StaffCustomerSummary]
+
+
+class StaffAccountSnapshot(BaseModel):
+    balance_pence: int
+    minimum_payment_pence: int
+    due_date: date
+    days_until_due: int
+    card_paused: bool
+    monthly_limit_pence: int | None = None
+
+
+class StaffCustomerView(BaseModel):
+    persona: Persona
+    display_name: str
+    needs_shared: bool
+    needs: NeedsProfile | None = None  # None unless the customer chose to share it
+    guidance: list[Guidance]
+    allowed_channels: list[Channel]  # always enforced, even when the details are not shared
+    account: StaffAccountSnapshot
+    requests: list[SupportRequest]  # including staff-only notes
+
+
+class StatusUpdate(BaseModel):
+    status: SupportStatus
+
+
+class StaffMessageCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+    channel: Channel = "app"
+    internal: bool = False  # True = a note for colleagues; the customer never sees it

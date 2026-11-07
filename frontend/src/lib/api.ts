@@ -47,6 +47,8 @@ export type AskResponse = {
   verified: boolean;
   badge: string;
   proposed_action: ProposedAction | null;
+  /** True when the customer seems to be struggling: offer to put them in touch with a person. */
+  support_offer?: boolean;
 };
 export type ConfirmResponse = {
   action_id: string;
@@ -114,4 +116,94 @@ export const api = {
   spend: (p: ApiPersona, merchant: string, pence: number) =>
     DEMO_MODE ? mockBank.spend(p, merchant, pence) : apiRequest<SpendResponse>("/demo/spend", p, post({ merchant, amount_pence: pence })),
   reset: (p: ApiPersona) => DEMO_MODE ? mockBank.reset(p) : apiRequest<{ ok: boolean; message: string }>("/demo/reset", p, post()),
+};
+
+
+// ---------- "Tell us once" and support (need the backend: not available in local demo mode) ----------
+
+export type Channel = "app" | "email" | "text" | "letter" | "phone";
+export type LetterFormat = "standard" | "large_print" | "braille" | "easy_read" | "audio";
+export type CallAdjustment = "extra_time" | "speak_slowly" | "relay_uk" | "agreed_times" | "same_person";
+export type SupportTopic = "struggling_to_pay" | "understanding_account" | "accessibility" | "something_else";
+export type SupportStatus = "open" | "in_progress" | "resolved";
+
+export type NeedsProfile = {
+  channels: Channel[];
+  preferred_channel: Channel;
+  letter_format: LetterFormat;
+  call_adjustments: CallAdjustment[];
+  helper_name: string | null;
+  notes: string | null;
+  share_with_staff: boolean;
+  updated_at?: string | null;
+};
+export type SupportMessage = {
+  id: number;
+  author: "customer" | "staff" | "note";
+  text: string;
+  channel: Channel | null;
+  staff_name: string | null;
+  created_at: string;
+};
+export type SupportRequest = {
+  id: number;
+  topic: SupportTopic;
+  topic_label: string;
+  message: string | null;
+  channel: Channel;
+  status: SupportStatus;
+  created_at: string;
+  updated_at: string;
+  messages: SupportMessage[];
+};
+export type Guidance = { kind: "contact" | "no_phone" | "letters" | "calls" | "helper" | "notes"; text: string };
+export type StaffRequestSummary = Omit<SupportRequest, "messages"> & { persona: ApiPersona; display_name: string; needs_shared: boolean };
+export type StaffCustomerSummary = { persona: ApiPersona; display_name: string; needs_shared: boolean; open_requests: number };
+export type StaffCustomerView = {
+  persona: ApiPersona;
+  display_name: string;
+  needs_shared: boolean;
+  needs: NeedsProfile | null;
+  guidance: Guidance[];
+  allowed_channels: Channel[];
+  account: {
+    balance_pence: number;
+    minimum_payment_pence: number;
+    due_date: string;
+    days_until_due: number;
+    card_paused: boolean;
+    monthly_limit_pence: number | null;
+  };
+  requests: SupportRequest[];
+};
+
+const NEEDS_SERVER = "Support and staff features need the SpendSense server. Start it with ./dev.sh.";
+
+function needsServer<T>(call: () => Promise<T>): Promise<T> {
+  return DEMO_MODE ? Promise.reject(new ApiError(NEEDS_SERVER, 0)) : call();
+}
+
+export const support = {
+  needs: (p: ApiPersona) => needsServer(() => apiRequest<NeedsProfile>("/me/needs", p)),
+  saveNeeds: (p: ApiPersona, profile: NeedsProfile) =>
+    needsServer(() => apiRequest<NeedsProfile>("/me/needs", p, { method: "PUT", body: JSON.stringify(profile) })),
+  requests: (p: ApiPersona) => needsServer(() => apiRequest<{ requests: SupportRequest[] }>("/support/requests", p)),
+  create: (p: ApiPersona, body: { topic: SupportTopic; message?: string; channel: Channel }) =>
+    needsServer(() => apiRequest<SupportRequest>("/support/requests", p, post(body))),
+  reply: (p: ApiPersona, id: number, text: string) =>
+    needsServer(() => apiRequest<SupportRequest>(`/support/requests/${id}/messages`, p, post({ text }))),
+};
+
+// The staff console. X-Staff stands in for staff sign-in in this demo; a real bank would use proper staff login and roles.
+const asStaff = <T>(path: string, options: RequestInit = {}) =>
+  needsServer(() => apiRequest<T>(path, "priya", { ...options, headers: { "X-Staff": "demo-agent", ...options.headers } }));
+
+export const staff = {
+  queue: () => asStaff<{ requests: StaffRequestSummary[] }>("/staff/requests"),
+  customers: () => asStaff<{ customers: StaffCustomerSummary[] }>("/staff/customers"),
+  customer: (persona: ApiPersona) => asStaff<StaffCustomerView>(`/staff/customers/${persona}`),
+  setStatus: (id: number, status: SupportStatus) =>
+    asStaff<SupportRequest>(`/staff/requests/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  message: (id: number, body: { text: string; channel: Channel; internal: boolean }) =>
+    asStaff<SupportRequest>(`/staff/requests/${id}/messages`, post(body)),
 };
