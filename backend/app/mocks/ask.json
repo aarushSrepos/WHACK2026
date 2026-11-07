@@ -1,0 +1,42 @@
+{
+  "bill": {
+    "answer": "Your balance this month is £620.00. The biggest new charge is £42.00 from ONLINE*MRKT 4471, which you may not recognise. Your minimum payment is £35.00.",
+    "format": "simple",
+    "figures": [
+      {"id": "balance", "label": "Balance", "value_pence": 62000},
+      {"id": "unrecognised_charge", "label": "Charge from ONLINE*MRKT 4471", "value_pence": 4200},
+      {"id": "minimum_payment", "label": "Minimum payment", "value_pence": 3500}
+    ],
+    "verified": true,
+    "badge": "Verified figures",
+    "proposed_action": null
+  },
+  "dispute": {
+    "answer": "I found a £42.00 charge from ONLINE*MRKT 4471 on 3 November. I can open a dispute for it.",
+    "format": "simple",
+    "figures": [
+      {"id": "unrecognised_charge", "label": "Charge from ONLINE*MRKT 4471", "value_pence": 4200}
+    ],
+    "verified": true,
+    "badge": "Verified figures",
+    "proposed_action": {
+      "action_id": "mock-dispute",
+      "type": "dispute",
+      "read_back": "Open a dispute for the £42.00 charge from ONLINE*MRKT 4471 on 3 November?"
+    }
+  },
+  "pay": {
+    "answer": "Your minimum payment is £35.00 and it is due on 12 November. I can set up that payment now.",
+    "format": "simple",
+    "figures": [
+      {"id": "minimum_payment", "label": "Minimum payment", "value_pence": 3500}
+    ],
+    "verified": true,
+    "badge": "Verified figures",
+    "proposed_action": {
+      "action_id": "mock-pay",
+      "type": "pay",
+      "read_back": "Pay your £35.00 minimum payment today? This is a simulated payment."
+    }
+  }
+}

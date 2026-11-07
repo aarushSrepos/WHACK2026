@@ -1,0 +1,22 @@
+{
+  "pay": {
+    "action_id": "mock-pay",
+    "type": "pay",
+    "read_back": "Pay your £35.00 minimum payment today? This is a simulated payment."
+  },
+  "dispute": {
+    "action_id": "mock-dispute",
+    "type": "dispute",
+    "read_back": "Open a dispute for the £42.00 charge from ONLINE*MRKT 4471 on 3 November?"
+  },
+  "pause_card": {
+    "action_id": "mock-pause_card",
+    "type": "pause_card",
+    "read_back": "Pause your card for 24 hours? You can turn it back on at any time. This is simulated."
+  },
+  "unpause_card": {
+    "action_id": "mock-unpause_card",
+    "type": "unpause_card",
+    "read_back": "Turn your card back on now? This is simulated."
+  }
+}

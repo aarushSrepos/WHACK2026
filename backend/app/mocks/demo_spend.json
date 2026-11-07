@@ -1,0 +1,8 @@
+{
+  "spending": {
+    "monthly_limit_pence": 40000,
+    "spent_this_month_pence": 32500,
+    "percent_used": 81.25
+  },
+  "threshold_crossed": 80
+}

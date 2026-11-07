@@ -1,0 +1,12 @@
+{
+  "transactions": [
+    {"id": "tx_001", "merchant": "Corner Cafe", "amount_pence": 420, "date": "2026-11-06", "status": "posted"},
+    {"id": "tx_007", "merchant": "Page & Co Books", "amount_pence": 1899, "date": "2026-11-06", "status": "pending"},
+    {"id": "tx_003", "merchant": "GreenGrocer Supermarket", "amount_pence": 3815, "date": "2026-11-05", "status": "posted"},
+    {"id": "tx_005", "merchant": "High Street Pharmacy", "amount_pence": 1240, "date": "2026-11-04", "status": "posted"},
+    {"id": "tx_042", "merchant": "ONLINE*MRKT 4471", "amount_pence": 4200, "date": "2026-11-03", "status": "posted"},
+    {"id": "tx_006", "merchant": "City Bus Pass", "amount_pence": 3000, "date": "2026-11-02", "status": "posted"},
+    {"id": "tx_004", "merchant": "StreamBox", "amount_pence": 999, "date": "2026-11-01", "status": "posted"},
+    {"id": "tx_008", "merchant": "Mobile Top-up", "amount_pence": 1000, "date": "2026-10-31", "status": "posted"}
+  ]
+}

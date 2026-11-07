@@ -1,0 +1,34 @@
+{
+  "pay": {
+    "action_id": "mock-pay",
+    "type": "pay",
+    "status": "done",
+    "summary": "Simulated payment of £35.00 made. Thank you.",
+    "reference": "SIM-PAY-0001",
+    "simulated": true
+  },
+  "dispute": {
+    "action_id": "mock-dispute",
+    "type": "dispute",
+    "status": "done",
+    "summary": "Dispute opened for the £42.00 charge from ONLINE*MRKT 4471 on 3 November. You do not need to phone us. We will update you here.",
+    "reference": "SIM-CASE-0001",
+    "simulated": true
+  },
+  "pause_card": {
+    "action_id": "mock-pause_card",
+    "type": "pause_card",
+    "status": "done",
+    "summary": "Your card is paused for 24 hours (simulated). You can turn it back on at any time.",
+    "reference": "SIM-PAUSE-0001",
+    "simulated": true
+  },
+  "unpause_card": {
+    "action_id": "mock-unpause_card",
+    "type": "unpause_card",
+    "status": "done",
+    "summary": "Your card is back on (simulated).",
+    "reference": "SIM-PAUSE-0002",
+    "simulated": true
+  }
+}

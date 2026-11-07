@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Secrets and local data: never commit these
+.env
+*.db
+*.sqlite3
+
+# Frontend
+node_modules/
+.next/
+
+# Editors and OS
+.DS_Store
+.idea/
