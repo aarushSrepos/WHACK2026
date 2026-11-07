@@ -1,0 +1,39 @@
+/* "Get help" button (same place on every page) and voice input. Kept in its own file. */
+
+/* Leave room at the bottom of pages so the help button never covers content. */
+.bank-content { padding-bottom: 88px; }
+
+.help-dock { position: fixed; right: 22px; bottom: 22px; z-index: 60; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.help-button { display: inline-flex; align-items: center; gap: 9px; min-height: 52px; padding: 12px 20px; border-radius: 999px; border: 2px solid #fff; background: var(--capital-one-blue); color: #fff; font-weight: 700; font-size: .875rem; box-shadow: 0 6px 22px rgba(0, 35, 60, .28); }
+.help-button:hover { background: #003956; }
+.help-button[aria-expanded="true"] { background: #0b1a26; }
+.help-panel { width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow: auto; background: var(--ss-surface); color: var(--ss-text); border: 1px solid var(--ss-border); border-radius: 12px; padding: 20px; box-shadow: 0 14px 44px rgba(0, 35, 60, .22); }
+.help-panel-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.help-panel h2 { font-size: 1.15rem; font-weight: 700; margin: 0; }
+.help-panel h2:focus { outline: none; }
+.help-close { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--ss-border); background: white; color: var(--ss-text); }
+.help-page { margin: 12px 0 10px; font-size: .875rem; line-height: 1.55; }
+.help-links { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.help-links a { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 12px; border: 1px solid var(--ss-border); border-radius: 8px; color: var(--ss-text); text-decoration: none; font-size: .875rem; font-weight: 600; }
+.help-links a span { flex: 1; }
+.help-links a:hover { border-color: #277dae; background: #f1f8fc; }
+.help-links a svg:first-child { color: var(--capital-one-blue); }
+.help-note { margin: 12px 0 0; font-size: .75rem; color: var(--ss-muted); }
+@media (max-width: 640px) { .help-dock { right: 12px; bottom: 12px; } .help-button span { font-size: .8rem; } }
+
+/* Voice input */
+.voice-input { margin-top: 10px; }
+.voice-button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 9px 16px; border-radius: 999px; border: 1px solid #9fbfd4; background: white; color: var(--capital-one-blue); font-size: .8rem; font-weight: 650; }
+.voice-button:hover { background: #eef5fa; }
+.voice-button.is-listening { background: var(--capital-one-red); border-color: var(--capital-one-red); color: #fff; animation: voice-pulse 1.4s ease-in-out infinite; }
+@keyframes voice-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(208, 48, 39, .45); } 50% { box-shadow: 0 0 0 8px rgba(208, 48, 39, 0); } }
+.voice-help { margin: 6px 0 0; font-size: .72rem; color: var(--ss-muted); line-height: 1.5; }
+.voice-help q { color: var(--ss-text); font-style: italic; }
+.voice-error { color: #8a362d; font-weight: 600; }
+/* In the dark setup chat */
+.setup-chat-composer .voice-input { margin-top: 8px; }
+
+html[data-contrast="high"] .help-button, html[data-contrast="high"] .voice-button.is-listening { background: #000; color: #fff; border-color: #fff; outline: 2px solid #000; }
+html[data-contrast="high"] .help-panel, html[data-contrast="high"] .help-links a, html[data-contrast="high"] .voice-button { border-color: #000; }
+html[data-motion="reduce"] .voice-button.is-listening { animation: none; }
+@media (prefers-reduced-motion: reduce) { html[data-motion="system"] .voice-button.is-listening { animation: none; } }

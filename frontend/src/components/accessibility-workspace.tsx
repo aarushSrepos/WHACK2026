@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { BankIcon } from "@/components/bank-icon";
+import { VoiceInputButton } from "@/components/voice-input-button";
 import { useAccessibility } from "@/components/accessibility-provider";
 import {
   interpretAccessibilityMessage,
@@ -77,6 +78,7 @@ function ChatPanel() {
   const { settings, update } = useAccessibility();
   const [messages, setMessages] = useState<ChatMessage[]>(starterMessages);
   const [draft, setDraft] = useState("");
+  const sendButton = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);
   const [aiAvailable, setAiAvailable] = useState(false);
   const [useAi, setUseAi] = useState(false);
@@ -165,8 +167,13 @@ function ChatPanel() {
               }
             }}
           />
-          <button type="submit" aria-label="Send accessibility request" disabled={busy || !draft.trim()}><BankIcon name="arrow-up-right" size={21}/></button>
+          <button ref={sendButton} type="submit" aria-label="Send accessibility request" disabled={busy || !draft.trim()}><BankIcon name="arrow-up-right" size={21}/></button>
         </form>
+        <VoiceInputButton
+          label="Say what you need"
+          onText={(text) => setDraft((d) => (d.trim() ? `${d.trim()} ${text}` : text))}
+          onDone={() => sendButton.current?.focus()}
+        />
         <div className="setup-chat-bottom">
           <span><BankIcon name="lock" size={13}/> Don&apos;t include account details or personal identifiers.</span>
           {aiAvailable ? <label className="setup-ai-toggle"><input type="checkbox" checked={useAi} onChange={(event) => setUseAi(event.target.checked)}/> Use enhanced AI <span>(sends your message to the AI provider)</span></label> : <span>Works privately on this device</span>}
