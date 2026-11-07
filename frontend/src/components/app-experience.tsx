@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useAccessibility } from "@/components/accessibility-provider";
 import { AccessibilityWorkspace } from "@/components/accessibility-workspace";
+import { HelpButton } from "@/components/help-button";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
@@ -21,5 +22,6 @@ export function AppExperience({ children }: { children: React.ReactNode }) {
       <div className="bank-content">{children}</div>
       <SiteFooter />
     </div>
+    <HelpButton />
   </div>;
 }

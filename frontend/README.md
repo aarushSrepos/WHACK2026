@@ -104,3 +104,12 @@ In Codespaces, `./dev.sh` sets this for you and the app uses the FastAPI backend
 - `src/lib/mock-bank.ts`: illustrative local bank ledger.
 
 **Important:** This is a hackathon interface prototype, not an actual bank. Do not use it to store customer credentials, handle payments or process live account data without independent security and privacy work.
+
+## Get help button and voice input
+
+- **Get help** sits bottom right on every customer page, in the same place every time, as WCAG 2.2 "Consistent help" asks. It explains the current page in one sentence, which can be read aloud, and links to the statement helper, Get support, Accessibility and Your needs. Opening it moves focus into the panel, and Escape closes it and returns focus to the button. Component: `src/components/help-button.tsx`. Page sentences: `PAGE_HELP`.
+- **Voice input** adds a microphone button to the accessibility assistant, the statement helper ("Ask about your money") and the Get support message box. Press it and speak, and your words are added to the box. Focus then moves to Send, so one press of Enter sends it. You always check the words before anything is sent.
+  - It uses the browser's built-in speech recognition (`src/lib/dictation.ts`), with no key or extra service. It works in Chrome, Edge and Safari. In Firefox the button doesn't appear, and typing still works.
+  - Chrome sends the audio to Google to turn it into text. The help text under the button says so.
+  - Your browser asks for microphone permission the first time. If it's blocked, the app explains how to allow it.
+  - Styles: `src/app/help-and-voice.css`.

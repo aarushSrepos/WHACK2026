@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-export type IconName = "home" | "receipt" | "chart" | "shield" | "credit" | "sliders" | "settings" | "arrow-up-right" | "arrow-right" | "chevron-right" | "chevron-down" | "arrow-down-left" | "search" | "sparkle" | "calendar" | "clock" | "check" | "lock" | "info" | "wallet" | "book" | "pause" | "help" | "sound" | "menu" | "close" | "reset";
+export type IconName = "home" | "receipt" | "chart" | "shield" | "credit" | "sliders" | "settings" | "arrow-up-right" | "arrow-right" | "chevron-right" | "chevron-down" | "arrow-down-left" | "search" | "sparkle" | "calendar" | "clock" | "check" | "lock" | "info" | "wallet" | "book" | "pause" | "help" | "sound" | "menu" | "close" | "reset" | "microphone";
 export function BankIcon({ name, size = 20, ...props }: SVGProps<SVGSVGElement> & { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
     home: <><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 16v-5l5-4 5 4v5"/></>,
@@ -17,6 +17,7 @@ export function BankIcon({ name, size = 20, ...props }: SVGProps<SVGSVGElement> 
     "chevron-down": <path d="m5 9 7 7 7-7"/>,
     search: <><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></>,
     sparkle: <><path d="m12 2 2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4L12 2Z"/></>,
+    microphone: <><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></>,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></>,
     clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
     check: <path d="m5 12 5 5L20 7"/>,

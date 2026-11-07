@@ -5,6 +5,7 @@ import { AccessibilityProvider } from "@/components/accessibility-provider";
 import { AppExperience } from "@/components/app-experience";
 import { BOOT_SCRIPT } from "@/lib/accessibility";
 import "./globals.css";
+import "./help-and-voice.css";
 
 export const metadata: Metadata = {
   title: {

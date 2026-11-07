@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { BankIcon } from "@/components/bank-icon";
 import { useDemo } from "@/components/demo-provider";
+import { VoiceInputButton } from "@/components/voice-input-button";
 import { ApiError, support, type Channel, type SupportRequest, type SupportTopic } from "@/lib/api";
 import { CHANNEL_PHRASE, STATUS_LABEL, TOPICS, timeAgo } from "@/lib/support-labels";
 import { useLoad } from "@/lib/use-load";
@@ -62,6 +63,7 @@ export function SupportRequestForm({ topic: presetTopic, onSent, onAnother, comp
     </fieldset>}
     <label htmlFor={`support-message-${compact ? "c" : "f"}`} className="block mt-4 mb-2 font-semibold">Tell us more, if you want to</label>
     <textarea id={`support-message-${compact ? "c" : "f"}`} className="v2-input" rows={3} maxLength={500} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Optional. Say as much or as little as you like." />
+    <VoiceInputButton label="Speak instead" onText={(t) => setMessage((m) => (m.trim() ? `${m.trim()} ${t}` : t))} />
     <fieldset className="needs-options needs-inline mt-4">
       <legend>How should we reply?</legend>
       {profile.channels.map((c) => <label key={c} className="needs-chip">
