@@ -1,0 +1,30 @@
+{
+  "persona": "alex",
+  "display_name": "Alex",
+  "settings": {
+    "text_size": "large",
+    "contrast": "standard",
+    "font": "default",
+    "reading_level": "plain",
+    "read_aloud": false,
+    "reduced_motion": true,
+    "input_mode": "any"
+  },
+  "account": {
+    "credit_limit_pence": 150000,
+    "balance_pence": 62000,
+    "available_credit_pence": 88000,
+    "utilisation_percent": 41,
+    "apr_basis_points": 2490,
+    "minimum_payment_pence": 3500,
+    "due_date": "2026-11-12",
+    "interest_estimate_pence": 1287,
+    "card_paused_until": null
+  },
+  "spending": {
+    "monthly_limit_pence": null,
+    "spent_this_month_pence": 31000,
+    "percent_used": null
+  },
+  "label": "Simulated demo data"
+}

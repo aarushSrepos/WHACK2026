@@ -12,7 +12,7 @@ TABLES = ["users", "transactions", "disputes", "payments", "pending_actions"]
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
-    persona                TEXT PRIMARY KEY,          -- priya, sam, amara
+    persona                TEXT PRIMARY KEY,          -- priya, sam, amara, alex
     display_name           TEXT NOT NULL,
     settings_json          TEXT NOT NULL,             -- the needs profile, as JSON
     credit_limit_pence     INTEGER NOT NULL,

@@ -1,20 +1,13 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useState, useSyncExternalStore } from "react";
 import {
   applyToDocument,
   defaultSettings,
   describeChange,
   loadSettings,
   saveSettings,
+  STORAGE_KEY,
   type AccessibilitySettings,
 } from "@/lib/accessibility";
 import { speak, stopSpeaking } from "@/lib/speech";
@@ -22,63 +15,71 @@ import { speak, stopSpeaking } from "@/lib/speech";
 type AccessibilityContextValue = {
   settings: AccessibilitySettings;
   announcement: string;
-  update: (patch: Partial<AccessibilitySettings>) => void;
+  /** Change some settings. `message` replaces the default "Text size is now large." announcement. */
+  update: (patch: Partial<AccessibilitySettings>, message?: string) => void;
   reset: () => void;
 };
 
-const AccessibilityContext = createContext<AccessibilityContextValue | null>(
-  null,
-);
+const AccessibilityContext = createContext<AccessibilityContextValue | null>(null);
 
-export function AccessibilityProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [settings, setSettings] =
-    useState<AccessibilitySettings>(defaultSettings);
-  const [ready, setReady] = useState(false);
+// Settings live in localStorage, read through a tiny store. The server render uses the defaults;
+// the boot script in layout.tsx has already applied the saved look before React starts, so nothing flashes.
+let cached: AccessibilitySettings | null = null;
+const listeners = new Set<() => void>();
+
+function getSnapshot(): AccessibilitySettings {
+  if (cached === null) cached = loadSettings();
+  return cached;
+}
+function subscribe(onChange: () => void) {
+  listeners.add(onChange);
+  return () => listeners.delete(onChange);
+}
+function write(next: AccessibilitySettings) {
+  cached = next;
+  try {
+    saveSettings(next);
+  } catch {
+    /* private browsing: settings last until the tab closes */
+  }
+  applyToDocument(next);
+  listeners.forEach((listener) => listener());
+}
+
+/** First visit only (nothing saved yet): start from the demo customer's preferences. */
+export function seedSettings(patch: Partial<AccessibilitySettings>) {
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    /* no storage: use the patch */
+  }
+  if (saved === null) write({ ...defaultSettings, ...patch });
+}
+
+export function AccessibilityProvider({ children }: { children: React.ReactNode }) {
+  const settings = useSyncExternalStore(subscribe, getSnapshot, () => defaultSettings);
   const [announcement, setAnnouncement] = useState("");
-  const settingsRef = useRef(settings);
 
-  useLayoutEffect(() => {
-    const stored = loadSettings();
-    settingsRef.current = stored;
-    setSettings(stored);
-    applyToDocument(stored);
-    setReady(true);
-  }, []);
+  const update = useCallback((patch: Partial<AccessibilitySettings>, message?: string) => {
+    const next = { ...getSnapshot(), ...patch };
+    write(next);
 
-  useLayoutEffect(() => {
-    if (!ready) return;
-    applyToDocument(settings);
-    saveSettings(settings);
-  }, [ready, settings]);
-
-  const update = useCallback((patch: Partial<AccessibilitySettings>) => {
-    const next = { ...settingsRef.current, ...patch };
-    settingsRef.current = next;
-    setSettings(next);
-
-    const message = describeChange(patch);
-    setAnnouncement(message);
+    const text = message ?? describeChange(patch);
+    setAnnouncement(text);
 
     if (patch.speechEnabled === false) {
       stopSpeaking();
       return;
     }
 
-    const shouldSpeak =
-      next.speechEnabled &&
-      (next.speakConfirmations || patch.speakConfirmations === false);
-
-    if (shouldSpeak) speak(message, next.speechRate);
+    const shouldSpeak = next.speechEnabled && (next.speakConfirmations || patch.speakConfirmations === false);
+    if (shouldSpeak) speak(text, next.speechRate);
   }, []);
 
   const reset = useCallback(() => {
-    const previous = settingsRef.current;
-    settingsRef.current = defaultSettings;
-    setSettings(defaultSettings);
+    const previous = getSnapshot();
+    write(defaultSettings);
     const message = "Settings are back to the starting choices.";
     setAnnouncement(message);
 
@@ -87,24 +88,15 @@ export function AccessibilityProvider({
     }
   }, []);
 
-  const value = useMemo(
-    () => ({ settings, announcement, update, reset }),
-    [settings, announcement, update, reset],
-  );
+  const value = useMemo(() => ({ settings, announcement, update, reset }), [settings, announcement, update, reset]);
 
-  return (
-    <AccessibilityContext.Provider value={value}>
-      {children}
-    </AccessibilityContext.Provider>
-  );
+  return <AccessibilityContext.Provider value={value}>{children}</AccessibilityContext.Provider>;
 }
 
 export function useAccessibility(): AccessibilityContextValue {
   const value = useContext(AccessibilityContext);
   if (!value) {
-    throw new Error(
-      "useAccessibility must be used within AccessibilityProvider",
-    );
+    throw new Error("useAccessibility must be used within AccessibilityProvider");
   }
   return value;
 }

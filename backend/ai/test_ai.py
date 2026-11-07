@@ -133,10 +133,19 @@ def test_reading_level_changes_template():
 
 def test_every_template_intent_passes_its_own_checker():
     for q in ["why is it higher", "when is it due", "how much do I owe", "what's my spending limit", "pause my card",
-              "pay the minimum", "I don't recognise the £42 charge", "hello"]:
+              "pay the minimum", "I don't recognise the £42 charge", "hello",
+              "how much interest will I pay", "what happens if I miss a payment", "can I afford a £200 purchase"]:
         for lvl in ("simple", "detailed"):
             r = ask(q, ACC, TXS, TODAY, reading_level=lvl)
             assert r["verified"] and r["source"] == "template", (q, lvl, r["answer"])
+
+
+def test_questions_ending_in_pay_do_not_propose_a_payment():
+    for q, intent in [("how much interest will I pay", "interest"), ("what happens if I miss a payment", "missed_payment"),
+                      ("I can't pay this month", "missed_payment"), ("can I afford a £200 purchase", "afford")]:
+        r = ask(q, ACC, TXS, TODAY)
+        assert r["intent"] == intent and r["proposed_action"] is None, (q, r["intent"])
+    assert ask("I want to pay", ACC, TXS, TODAY)["intent"] == "pay"
 
 
 def test_make_proposal_errors():

@@ -7,7 +7,7 @@ import { Lang } from "@/components/lang";
 import { ReadAloudButton } from "@/components/read-aloud-button";
 import { useAccessibility } from "@/components/accessibility-provider";
 import { DataGate } from "@/components/v2-ui";
-import { formatPounds } from "@/lib/demo-account";
+import { pounds } from "@/lib/money";
 
 export function DashboardView() {
   const { settings } = useAccessibility();
@@ -54,23 +54,23 @@ export function DashboardView() {
             </dt>
             <dd>
               <p className="mt-1 text-5xl font-bold tracking-tight sm:text-6xl">
-                {formatPounds(balance, 0)}
+                {pounds(d.balancePence, 0)}
               </p>
               <p className="mt-3 max-w-2xl text-on-navy-muted">
                 <Lang
                   simple="This is the money to pay back."
                   detailed={
                     <>
-                      This statement total is {formatPounds(balance)}.
+                      This statement total is {pounds(d.balancePence)}.
                       The sample credit limit is{" "}
-                      {formatPounds(d.creditLimitPence / 100)}, so{" "}
-                      {formatPounds(d.availableCreditPence / 100)} is still available.
+                      {pounds(d.creditLimitPence)}, so{" "}
+                      {pounds(d.availableCreditPence)} is still available.
                       Paying more than the minimum reduces what you owe.
                     </>
                   }
                 />
               </p>
-              <ReadAloudButton text={spoken} />
+              <ReadAloudButton text={spoken} what="your account summary" onNavy />
             </dd>
           </div>
 
@@ -80,7 +80,7 @@ export function DashboardView() {
             </dt>
             <dd>
               <p className="mt-1 text-4xl font-bold tracking-tight">
-                {formatPounds(minimum, 0)}
+                {pounds(d.minimumPence, 0)}
               </p>
               <p className="mt-3 text-muted">
                 <Lang
@@ -163,7 +163,7 @@ export function DashboardView() {
                   <td className="py-3 pr-4 font-semibold">{transaction.merchant}</td>
                   <td className="py-3 pr-4">{transaction.status}</td>
                   <td className="py-3 text-right font-semibold tabular-nums">
-                    {formatPounds(transaction.amountPence / 100)}
+                    {pounds(transaction.amountPence)}
                   </td>
                 </tr>
               ))}
@@ -179,7 +179,7 @@ export function DashboardView() {
         <p className="mt-2 max-w-2xl text-muted">
           <Lang
             simple="You can pay on the Pay page."
-            detailed={`The minimum to pay is ${formatPounds(minimum)}, due in ${d.dueInDays} days. You will review and confirm before anything happens.`}
+            detailed={`The minimum to pay is ${pounds(d.minimumPence)}, due in ${d.dueInDays} days. You will review and confirm before anything happens.`}
           />
         </p>
         <Link href="/payment" className="v2-button mt-4 inline-block">Go to payment</Link>

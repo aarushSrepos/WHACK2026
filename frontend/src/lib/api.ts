@@ -2,7 +2,7 @@
 // Money is whole pence in an int. Set NEXT_PUBLIC_API_URL in .env.local if the backend is not on port 8000.
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-export type ApiPersona = "priya" | "sam" | "amara";
+export type ApiPersona = "priya" | "sam" | "amara" | "alex";
 export type ActionType = "pay" | "dispute" | "pause_card" | "unpause_card";
 export type Format = "simple" | "detailed";
 

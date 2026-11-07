@@ -1,4 +1,4 @@
-"""Fills the database with the three demo personas (person B owns this file).
+"""Fills the database with the four demo personas (person B owns this file).
 
     cd backend
     python -m app.seed
@@ -17,7 +17,7 @@ from datetime import date, timedelta
 from app.db import TABLES, connect, create_tables
 from app.mock_data import load_mock
 
-PERSONAS = ["priya", "sam", "amara"]
+PERSONAS = ["priya", "sam", "amara", "alex"]
 
 # Same account for everyone, so the demo story is identical for every persona.
 # The minimum payment is not stored: C's engine works it out from the balance and APR.
@@ -28,8 +28,8 @@ ACCOUNT = {
 }
 DUE_IN_DAYS = 5
 
-# Only Priya has set a spending limit (£400). Sam and Amara have none.
-MONTHLY_LIMIT_PENCE = {"priya": 40000, "sam": None, "amara": None}
+# Only Priya has set a spending limit (£400). The others have none (Alex can choose one in the demo).
+MONTHLY_LIMIT_PENCE = {"priya": 40000, "sam": None, "amara": None, "alex": None}
 
 # This month: (id, merchant, pence, days ago, status). They add up to £310.00, which is
 # 77% of Priya's £400 limit, so one more small purchase crosses the 80% check-in.
@@ -114,4 +114,4 @@ if __name__ == "__main__":
     connection = connect()
     seed(connection)
     connection.close()
-    print("Seeded 3 personas: priya, sam, amara.")
+    print(f"Seeded {len(PERSONAS)} personas: {', '.join(PERSONAS)}.")

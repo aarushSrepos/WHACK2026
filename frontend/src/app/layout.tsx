@@ -1,27 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Atkinson_Hyperlegible, Geist, Lexend } from "next/font/google";
+// Fonts are bundled from npm (not fetched from Google at build time), so the app builds and runs offline.
+import "@fontsource-variable/geist";
+import "@fontsource-variable/lexend";
+import "@fontsource/atkinson-hyperlegible/400.css";
+import "@fontsource/atkinson-hyperlegible/700.css";
 import { DemoProvider } from "@/components/demo-provider";
 import { AccessibilityProvider } from "@/components/accessibility-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { BOOT_SCRIPT } from "@/lib/accessibility";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const lexend = Lexend({
-  variable: "--font-lexend",
-  subsets: ["latin"],
-});
-
-const atkinson = Atkinson_Hyperlegible({
-  variable: "--font-atkinson",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -41,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${lexend.variable} ${atkinson.variable} h-full`}
+      className="h-full"
       data-text-size="default"
       data-contrast="standard"
       data-font="default"
