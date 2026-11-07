@@ -1,2 +1,0 @@
-import {DemoNotice,DisputeContent} from "@/components/v2-ui";
-export default function Page(){return <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl px-4 py-8"><h1 className="mb-5 text-3xl font-bold">Question a charge</h1><DemoNotice/><DisputeContent/></main>}

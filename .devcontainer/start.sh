@@ -5,7 +5,10 @@ cd "$(dirname "$0")/.."
 
 if [ -n "$CODESPACE_NAME" ]; then
   API="https://${CODESPACE_NAME}-8000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
-  echo "NEXT_PUBLIC_API_URL=${API}" > frontend/.env.local
+  # Replace only this line, so anything else in frontend/.env.local (like an API key) is kept.
+  touch frontend/.env.local
+  { grep -v '^NEXT_PUBLIC_API_URL=' frontend/.env.local; echo "NEXT_PUBLIC_API_URL=${API}"; } > frontend/.env.local.tmp
+  mv frontend/.env.local.tmp frontend/.env.local
   echo "Frontend will call the API at ${API}"
   # The browser can only call the API if port 8000 is public. Needs the port to be forwarded first,
   # so ./dev.sh runs this again once the backend is up.

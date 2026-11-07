@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SettingsForm } from "@/components/settings-form";
 
 export const metadata: Metadata = {
-  title: "Share your situation",
+  title: "Accessibility & preferences",
   description:
     "Choose text size, contrast, font, language, motion, and audio for SpendSense.",
 };

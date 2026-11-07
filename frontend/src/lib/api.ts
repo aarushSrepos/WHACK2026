@@ -1,9 +1,11 @@
 // SpendSense API client. Types mirror backend/app/schemas.py (the API contract).
-// Money is whole pence in an int. Set NEXT_PUBLIC_API_URL in .env.local if the backend is not on port 8000.
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Money is stored in whole pence. Local demo mode is the default; set NEXT_PUBLIC_API_URL to use a compatible backend.
+import { mockBank } from "./mock-bank";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+export const DEMO_MODE = !API_BASE_URL;
 
 export type ApiPersona = "priya" | "sam" | "amara" | "alex";
-export type ActionType = "pay" | "dispute" | "pause_card" | "unpause_card";
+export type ActionType = "pay" | "pause_card" | "unpause_card";
 export type Format = "simple" | "detailed";
 
 export type ApiAccount = {
@@ -56,9 +58,7 @@ export type ConfirmResponse = {
 };
 export type ActionRequest = {
   type: ActionType;
-  transaction_id?: string;
   amount_pence?: number;
-  reason?: string;
 };
 export type SpendResponse = {
   spending: ApiSpending;
@@ -102,16 +102,16 @@ export async function apiRequest<T>(path: string, persona: ApiPersona, options: 
 const post = (body?: unknown): RequestInit => ({ method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 
 export const api = {
-  me: (p: ApiPersona) => apiRequest<MeResponse>("/me", p),
-  transactions: (p: ApiPersona) => apiRequest<{ transactions: ApiTransaction[] }>("/transactions", p),
+  me: (p: ApiPersona) => DEMO_MODE ? mockBank.me(p) : apiRequest<MeResponse>("/me", p),
+  transactions: (p: ApiPersona) => DEMO_MODE ? mockBank.transactions(p) : apiRequest<{ transactions: ApiTransaction[] }>("/transactions", p),
   ask: (p: ApiPersona, question: string, format: Format) =>
-    apiRequest<AskResponse>("/ask", p, post({ question, format })),
-  propose: (p: ApiPersona, body: ActionRequest) => apiRequest<ProposedAction>("/actions", p, post(body)),
+    DEMO_MODE ? mockBank.ask(p, question, format) : apiRequest<AskResponse>("/ask", p, post({ question, format })),
+  propose: (p: ApiPersona, body: ActionRequest) => DEMO_MODE ? mockBank.propose(p, body) : apiRequest<ProposedAction>("/actions", p, post(body)),
   confirm: (p: ApiPersona, id: string) =>
-    apiRequest<ConfirmResponse>(`/actions/${encodeURIComponent(id)}/confirm`, p, post()),
+    DEMO_MODE ? mockBank.confirm(p, id) : apiRequest<ConfirmResponse>(`/actions/${encodeURIComponent(id)}/confirm`, p, post()),
   setLimit: (p: ApiPersona, pence: number) =>
-    apiRequest<MeResponse>("/me/settings", p, { method: "PUT", body: JSON.stringify({ monthly_limit_pence: pence }) }),
+    DEMO_MODE ? mockBank.setLimit(p, pence) : apiRequest<MeResponse>("/me/settings", p, { method: "PUT", body: JSON.stringify({ monthly_limit_pence: pence }) }),
   spend: (p: ApiPersona, merchant: string, pence: number) =>
-    apiRequest<SpendResponse>("/demo/spend", p, post({ merchant, amount_pence: pence })),
-  reset: (p: ApiPersona) => apiRequest<{ ok: boolean; message: string }>("/demo/reset", p, post()),
+    DEMO_MODE ? mockBank.spend(p, merchant, pence) : apiRequest<SpendResponse>("/demo/spend", p, post({ merchant, amount_pence: pence })),
+  reset: (p: ApiPersona) => DEMO_MODE ? mockBank.reset(p) : apiRequest<{ ok: boolean; message: string }>("/demo/reset", p, post()),
 };

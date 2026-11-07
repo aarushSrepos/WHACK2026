@@ -1,2 +1,2 @@
 import {DemoNotice,PaymentContent} from "@/components/v2-ui";
-export default function Page(){return <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl px-4 py-8"><h1 className="mb-5 text-3xl font-bold">Pay your card</h1><DemoNotice/><PaymentContent/></main>}
+export default function Page() { return <main id="main" tabIndex={-1} className="bank-inner-page"><header className="page-heading"><div><p className="eyebrow"><span className="eyebrow-rule"/> YOUR CREDIT ACCOUNT</p><h1>Make a payment</h1><p className="page-intro">Choose an amount, review it, and confirm a simulated payment.</p></div></header><DemoNotice/><PaymentContent/></main>; }
