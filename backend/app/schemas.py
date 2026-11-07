@@ -91,12 +91,15 @@ class AskRequest(BaseModel):
 
 
 class Figure(BaseModel):
-    """One number the answer is allowed to use. Set exactly one of the two values."""
+    """One number the answer is allowed to use. Exactly one of the three values is set."""
 
     id: str  # e.g. "minimum_payment"
     label: str  # e.g. "Minimum payment"
+    kind: Literal["pence", "percent", "days"] | None = None
+    display: str | None = None  # ready-made text to show or speak: "£35.00", "41%", "5 days"
     value_pence: int | None = None
     value_percent: float | None = None
+    value_days: int | None = None
 
 
 class ProposedAction(BaseModel):

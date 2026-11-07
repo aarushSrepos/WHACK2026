@@ -1,6 +1,7 @@
 fastapi>=0.115
 uvicorn>=0.30
 python-dotenv>=1.0
+anthropic>=0.40  # used by backend/ai only when ANTHROPIC_API_KEY is set
 
 # for tests (pytest runs the API in-process using httpx)
 pytest>=8.0

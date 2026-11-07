@@ -13,7 +13,7 @@ Run with:  uvicorn app.main:app --reload   (from the backend/ folder)
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import queries
+from app import ai_glue, queries
 from app.config import cors_origins, demo_enabled, live_routes, mock_default, use_mock
 from app.db import db
 from app.mock_data import load_mock
@@ -102,7 +102,6 @@ def get_me(persona: str = Depends(get_persona)):
     """Settings, account figures and progress against the customer's own spending limit."""
     if use_mock("me"):
         return load_mock(f"me_{persona}")
-    # TODO(C): figures.py is a stand-in; switch to backend/engine when C's functions exist.
     with db() as conn:
         return queries.get_me(conn, persona)
 
@@ -141,10 +140,11 @@ def ask(body: AskRequest, persona: str = Depends(get_persona)):
         data = load_mock("ask")[pick_ask_mock(body.question)]
         data["format"] = body.format
         return data
-    # TODO(B) with C: 1) C's engine computes the figures, 2) C's AI layer writes the answer and
-    # the number checker verifies it, 3) if it proposes an action, save a pending action and
-    # return its action_id and read_back.
-    raise not_built("ask")
+    # C's engine computes the figures, C's AI layer writes the answer and checks every number,
+    # and any proposed action is saved in pending_actions. See app/ai_glue.py.
+    with db() as conn:
+        account, transactions = queries.load_engine_inputs(conn, persona)
+        return ai_glue.answer_question(conn, persona, body.question, body.format, account, transactions)
 
 
 @app.post("/actions", response_model=ProposedAction, tags=["actions"])

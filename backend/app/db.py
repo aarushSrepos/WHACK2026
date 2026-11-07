@@ -18,8 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     credit_limit_pence     INTEGER NOT NULL,
     balance_pence          INTEGER NOT NULL,
     apr_basis_points       INTEGER NOT NULL,          -- 2490 = 24.90%
-    minimum_payment_pence  INTEGER NOT NULL,
-    due_date               TEXT NOT NULL,
+    due_date              TEXT NOT NULL,
     monthly_limit_pence    INTEGER,                   -- the customer's own limit, NULL = none
     card_paused_until      TEXT                       -- ISO datetime, NULL = card is on
 );

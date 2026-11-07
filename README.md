@@ -89,11 +89,31 @@ python -m app.seed      # wipe the database and recreate Priya, Sam and Amara
 - The due date is always **five days from the day you seed**, so re-seed on demo day.
 - `POST /demo/reset` does the same thing from the running API.
 - A live route creates and seeds the database by itself the first time it is called.
-- `backend/app/figures.py` holds the money calculations for now. C's `backend/engine/` replaces it later.
-- "This month" in the demo means the last 30 days of transactions.
+- All figures come from C's `backend/engine/` (minimum payment, utilisation, interest, month spend).
+  Nothing in `backend/app/` does its own money maths.
+- "This month" means the **calendar month**, the same as the engine. The seed adds a last-month
+  set of transactions too, so "why is my bill higher?" has something to compare with.
+  This month adds up to £310.00 and last month to £186.00.
 
-**Built so far (real data):** `GET /me`, `GET /transactions`, `POST /demo/reset`.
-Turn them on with `LIVE_ROUTES=me,transactions,demo_reset` in `backend/.env`.
+**Built so far (real data):** `GET /me`, `GET /transactions`, `POST /demo/reset`, `POST /ask`.
+Turn the first three on with `LIVE_ROUTES=me,transactions,demo_reset` in `backend/.env`.
+
+## The AI layer (`/ask`)
+
+C's `backend/ai/` does the thinking and `backend/app/ai_glue.py` connects it to the API:
+
+1. `ask()` works out which figures are relevant and asks Claude to write the answer.
+2. The number checker rejects any £ amount or percentage that the engine did not produce, and retries once.
+3. If that still fails, or there is no key or no Wi-Fi, a **template answer** is used instead
+   (badge: "Standard explanation"). With `ANTHROPIC_API_KEY` empty, `/ask` always uses templates.
+4. If the answer proposes an action, it is saved in `pending_actions` as `waiting` and the
+   response carries its `action_id`. Nothing runs until the customer confirms.
+
+**Add `ask` to `LIVE_ROUTES` only together with `actions` and `confirm`.** Those two are not built
+yet, so the action ids that live `/ask` returns cannot be confirmed (mock mode uses `mock-...` ids).
+
+`/ask` figures also carry `kind` and `display` (the text to show or speak, like "£35.00"), and
+`value_days` for day counts. The action type for a card pause is `pause_card`.
 
 ## Making the next route real (for B)
 
@@ -102,7 +122,7 @@ Turn them on with `LIVE_ROUTES=me,transactions,demo_reset` in `backend/.env`.
 3. Try it with that route name added to `LIVE_ROUTES` while the rest stay mock.
 4. Add a test in `backend/tests/test_live_routes.py`, run `pytest`, then open a pull request.
 
-Next in order: `POST /actions`, `POST /actions/{id}/confirm`, `PUT /me/settings`, `POST /demo/spend`, then `/ask`.
+Next in order: `POST /actions`, `POST /actions/{id}/confirm` (this is the important one), `PUT /me/settings`, `POST /demo/spend`.
 
 ## Tests
 
@@ -110,6 +130,9 @@ Next in order: `POST /actions`, `POST /actions/{id}/confirm`, `PUT /me/settings`
 cd backend
 pytest
 ```
+
+This runs everyone's tests: `tests/` (the API, B), `engine/` (C's maths) and `ai/` (C's AI layer).
+No test calls the real Claude API.
 
 ## Git rules
 

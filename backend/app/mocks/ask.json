@@ -3,9 +3,9 @@
     "answer": "Your balance this month is £620.00. The biggest new charge is £42.00 from ONLINE*MRKT 4471, which you may not recognise. Your minimum payment is £35.00.",
     "format": "simple",
     "figures": [
-      {"id": "balance", "label": "Balance", "value_pence": 62000},
-      {"id": "unrecognised_charge", "label": "Charge from ONLINE*MRKT 4471", "value_pence": 4200},
-      {"id": "minimum_payment", "label": "Minimum payment", "value_pence": 3500}
+      {"id": "balance", "label": "Balance", "kind": "pence", "display": "£620.00", "value_pence": 62000},
+      {"id": "unrecognised_charge", "label": "Charge from ONLINE*MRKT 4471", "kind": "pence", "display": "£42.00", "value_pence": 4200},
+      {"id": "minimum_payment", "label": "Minimum payment", "kind": "pence", "display": "£35.00", "value_pence": 3500}
     ],
     "verified": true,
     "badge": "Verified figures",
@@ -15,7 +15,7 @@
     "answer": "I found a £42.00 charge from ONLINE*MRKT 4471 on 3 November. I can open a dispute for it.",
     "format": "simple",
     "figures": [
-      {"id": "unrecognised_charge", "label": "Charge from ONLINE*MRKT 4471", "value_pence": 4200}
+      {"id": "charge_amount", "label": "Amount of the charge", "kind": "pence", "display": "£42.00", "value_pence": 4200}
     ],
     "verified": true,
     "badge": "Verified figures",
@@ -29,7 +29,8 @@
     "answer": "Your minimum payment is £35.00 and it is due on 12 November. I can set up that payment now.",
     "format": "simple",
     "figures": [
-      {"id": "minimum_payment", "label": "Minimum payment", "value_pence": 3500}
+      {"id": "minimum_payment", "label": "Minimum payment", "kind": "pence", "display": "£35.00", "value_pence": 3500},
+      {"id": "days_until_due", "label": "Days until payment is due", "kind": "days", "display": "5 days", "value_days": 5}
     ],
     "verified": true,
     "badge": "Verified figures",

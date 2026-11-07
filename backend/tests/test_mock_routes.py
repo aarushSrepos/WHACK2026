@@ -144,16 +144,16 @@ def test_demo_routes_can_be_switched_off(monkeypatch):
 
 
 def test_real_mode_says_501_until_a_route_is_built(monkeypatch):
-    # /ask is not built yet. When you build a route, move this check to one that still is unbuilt.
+    # POST /actions is not built yet. When you build it, move this check to a route that still is unbuilt.
     monkeypatch.setenv("MOCK", "0")
-    r = client.post("/ask", json={"question": "Why is my bill higher?"})
+    r = client.post("/actions", json={"type": "pay"})
     assert r.status_code == 501
     assert "not built yet" in r.json()["detail"]
 
 
 def test_live_routes_override_mock_mode(monkeypatch):
-    monkeypatch.setenv("LIVE_ROUTES", "ask")
-    assert client.post("/ask", json={"question": "hello"}).status_code == 501  # live, not built yet
+    monkeypatch.setenv("LIVE_ROUTES", "actions")
+    assert client.post("/actions", json={"type": "pay"}).status_code == 501  # live, not built yet
     assert client.get("/transactions").status_code == 200  # still mock
 
 
