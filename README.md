@@ -14,6 +14,7 @@ SpendSense is a credit card companion for customers with accessibility needs. Th
 | **Overview** | Balance, minimum payment and due date, in plain or detailed wording, read aloud on request |
 | **Statement** | "Why is my bill higher?" explained in plain English; ask any question in your own words |
 | **Credit simulator** | See how paying more than the minimum changes the time and the interest; what happens if you miss a payment |
+| **Credit score coach** | One click from the dashboard ("Improve my credit score") runs a score model in the browser and gives a personal, ranked plan: estimated score and band, the steps that would help most with points and timeframes, a 2-year projection, and what's helping or holding the score back. Built from 120,000 simulated credit files (see `ml/credit-score-model/README.md`) |
 | **Payments** | Pay the minimum, the full balance or any amount |
 | **Spending & wellbeing** | Set your own monthly limit, get a gentle check-in at 80%, pause your card for 24 hours, find independent support |
 | **Get support** | Talk to a person without a phone queue. Choose how they reply (only from the ways you allow), and see their replies here. Offered automatically if you tell the assistant you're struggling to pay |
@@ -86,7 +87,7 @@ In Codespaces, `./dev.sh` points the frontend at the backend for you. Locally, p
 
 ```bash
 cd backend && python -m pytest -q      # engine, AI checker, routes, confirm-once actions
-cd frontend && npm run typecheck && npm run lint && npm run test:demo && npm run test:accessibility && npm run build
+cd frontend && npm run typecheck && npm run lint && npm run test:demo && npm run test:accessibility && npm run test:credit-coach && npm run build
 ```
 
 ## How it fits together
@@ -99,6 +100,8 @@ frontend/ (Next.js)          backend/ (FastAPI + SQLite)
   src/lib/api.ts   API client  engine/          every number (balance, interest, minimum…)
   src/lib/accessibility-chat.ts  assistant rules  ai/        intent -> figures -> Claude or template -> number check
   src/app/api/accessibility-ai   optional AI for the assistant (opt-in)
+  src/lib/credit-coach/  credit score model (runs in the browser)
+ml/credit-score-model/   synthetic dataset, training and advice validation
 ```
 
 `backend/app/schemas.py` is the API contract. Money is always whole pence in an integer.

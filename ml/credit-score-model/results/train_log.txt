@@ -1,0 +1,117 @@
+linear_regression {'r2': 0.9335, 'mae': 45.884, 'mae_vs_noise_free_truth': 42.658, 'band_accuracy': 0.7268} {'r2': 0.9342, 'mae': 45.82, 'mae_vs_noise_free_truth': 42.57, 'band_accuracy': 0.7264}
+gradient_boosting {'r2': 0.9889, 'mae': 19.226, 'mae_vs_noise_free_truth': 7.522, 'band_accuracy': 0.8676} {'r2': 0.989, 'mae': 19.18, 'mae_vs_noise_free_truth': 7.31, 'band_accuracy': 0.866}
+gradient_boosting_monotonic {'r2': 0.9773, 'mae': 26.962, 'mae_vs_noise_free_truth': 20.606, 'band_accuracy': 0.814} {'r2': 0.9773, 'mae': 27.2, 'mae_vs_noise_free_truth': 20.51, 'band_accuracy': 0.8158}
+/Users/aarushsharma/Dev/WHACK2026/WHACK2026/.claude/worktrees/credit-score-feedback-model-302266/ml/credit-score-model/train_model.py:104: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rhos.append(spearmanr([m[a] for a in acts], [t[a] for a in acts]).statistic)
+fidelity linear_regression {'people_with_2plus_actions': 5150, 'top_action_matches_truth': 0.8718, 'top_action_in_truth_top2': 0.9759, 'mean_rank_correlation': 0.8291, 'gain_mae_points': 15.61, 'top_action_harmful_rate': 0.0002}
+fidelity gradient_boosting {'people_with_2plus_actions': 5150, 'top_action_matches_truth': 0.945, 'top_action_in_truth_top2': 0.9934, 'mean_rank_correlation': 0.9136, 'gain_mae_points': 7.39, 'top_action_harmful_rate': 0.0003}
+/Users/aarushsharma/Dev/WHACK2026/WHACK2026/.claude/worktrees/credit-score-feedback-model-302266/ml/credit-score-model/train_model.py:104: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rhos.append(spearmanr([m[a] for a in acts], [t[a] for a in acts]).statistic)
+fidelity gradient_boosting_monotonic {'people_with_2plus_actions': 5150, 'top_action_matches_truth': 0.8353, 'top_action_in_truth_top2': 0.9639, 'mean_rank_correlation': 0.8078, 'gain_mae_points': 15.41, 'top_action_harmful_rate': 0.0005}
+stress {'linear_regression': {'checks': 12323, 'improvement_lowered_score_by_5plus': 0.0}, 'gradient_boosting': {'checks': 12323, 'improvement_lowered_score_by_5plus': 0.0013}, 'gradient_boosting_monotonic': {'checks': 12323, 'improvement_lowered_score_by_5plus': 0.0}}
+segment {'id': 0, 'name': 'Cards close to the limit', 'share': 0.1972, 'median_score': 692, 'typical_top_actions': {'lower_utilisation': 0.69, 'pause_applications': 0.188, 'on_time_payments': 0.115}, 'median_plan_gain_12m': 238, 'main_archetypes': {'overextended_cards': 0.379, 'single_parent_stretched': 0.154, 'credit_hungry_switcher': 0.15}}
+segment {'id': 1, 'name': 'Long, steady history', 'share': 0.2883, 'median_score': 937, 'typical_top_actions': {'pause_applications': 0.325, 'lower_utilisation': 0.272, 'build_history': 0.157}, 'median_plan_gain_12m': 22, 'main_archetypes': {'established_homeowner': 0.399, 'retired_low_activity': 0.214, 'young_professional': 0.151}}
+segment {'id': 2, 'name': 'Rebuilding after a default', 'share': 0.0501, 'median_score': 397, 'typical_top_actions': {'on_time_payments': 0.432, 'lower_utilisation': 0.417, 'pause_applications': 0.08}, 'median_plan_gain_12m': 393, 'main_archetypes': {'anything_goes': 0.431, 'recovering_after_default': 0.263, 'payday_cycle': 0.125}}
+segment {'id': 3, 'name': 'Brand new to credit', 'share': 0.0637, 'median_score': 683, 'typical_top_actions': {'electoral_roll': 0.448, 'pause_applications': 0.275, 'rent_reporting': 0.165}, 'median_plan_gain_12m': 118, 'main_archetypes': {'student_thin_file': 0.505, 'new_to_uk': 0.315, 'anything_goes': 0.091}}
+segment {'id': 4, 'name': 'Building a first track record', 'share': 0.1284, 'median_score': 710, 'typical_top_actions': {'electoral_roll': 0.398, 'lower_utilisation': 0.393, 'pause_applications': 0.158}, 'median_plan_gain_12m': 155, 'main_archetypes': {'student_thin_file': 0.267, 'new_to_uk': 0.241, 'young_professional': 0.23}}
+segment {'id': 5, 'name': 'Rebuilding after a county court judgment', 'share': 0.0431, 'median_score': 474, 'typical_top_actions': {'lower_utilisation': 0.41, 'on_time_payments': 0.305, 'pause_applications': 0.122}, 'median_plan_gain_12m': 207, 'main_archetypes': {'recovering_after_default': 0.825, 'payday_cycle': 0.061, 'anything_goes': 0.044}}
+segment {'id': 6, 'name': "Linked to someone else's credit", 'share': 0.065, 'median_score': 792, 'typical_top_actions': {'lower_utilisation': 0.465, 'dissociate': 0.367, 'on_time_payments': 0.098}, 'median_plan_gain_12m': 146, 'main_archetypes': {'financially_linked': 0.561, 'single_parent_stretched': 0.14, 'overextended_cards': 0.07}}
+segment {'id': 7, 'name': 'Renting and building steadily', 'share': 0.0391, 'median_score': 806, 'typical_top_actions': {'lower_utilisation': 0.323, 'electoral_roll': 0.25, 'pause_applications': 0.235}, 'median_plan_gain_12m': 99, 'main_archetypes': {'careful_renter': 0.35, 'young_professional': 0.223, 'new_to_uk': 0.084}}
+segment {'id': 8, 'name': 'Juggling several credit problems', 'share': 0.0669, 'median_score': 252, 'typical_top_actions': {'on_time_payments': 0.613, 'lower_utilisation': 0.32, 'pause_applications': 0.068}, 'median_plan_gain_12m': 579, 'main_archetypes': {'anything_goes': 0.992, 'payday_cycle': 0.004, 'overextended_cards': 0.003}}
+segment {'id': 9, 'name': 'Caught in short-term borrowing', 'share': 0.0583, 'median_score': 531, 'typical_top_actions': {'lower_utilisation': 0.573, 'on_time_payments': 0.21, 'pause_applications': 0.16}, 'median_plan_gain_12m': 374, 'main_archetypes': {'payday_cycle': 0.563, 'overextended_cards': 0.124, 'single_parent_stretched': 0.104}}
+{
+ "test": {
+  "linear_regression": {
+   "r2": 0.9342,
+   "mae": 45.82,
+   "mae_vs_noise_free_truth": 42.57,
+   "band_accuracy": 0.7264
+  },
+  "gradient_boosting": {
+   "r2": 0.989,
+   "mae": 19.18,
+   "mae_vs_noise_free_truth": 7.31,
+   "band_accuracy": 0.866
+  },
+  "gradient_boosting_monotonic": {
+   "r2": 0.9773,
+   "mae": 27.2,
+   "mae_vs_noise_free_truth": 20.51,
+   "band_accuracy": 0.8158
+  }
+ },
+ "advice_fidelity": {
+  "linear_regression": {
+   "people_with_2plus_actions": 5150,
+   "top_action_matches_truth": 0.8718,
+   "top_action_in_truth_top2": 0.9759,
+   "mean_rank_correlation": 0.8291,
+   "gain_mae_points": 15.61,
+   "top_action_harmful_rate": 0.0002
+  },
+  "gradient_boosting": {
+   "people_with_2plus_actions": 5150,
+   "top_action_matches_truth": 0.945,
+   "top_action_in_truth_top2": 0.9934,
+   "mean_rank_correlation": 0.9136,
+   "gain_mae_points": 7.39,
+   "top_action_harmful_rate": 0.0003
+  },
+  "gradient_boosting_monotonic": {
+   "people_with_2plus_actions": 5150,
+   "top_action_matches_truth": 0.8353,
+   "top_action_in_truth_top2": 0.9639,
+   "mean_rank_correlation": 0.8078,
+   "gain_mae_points": 15.41,
+   "top_action_harmful_rate": 0.0005
+  }
+ },
+ "stress_test": {
+  "linear_regression": {
+   "checks": 12323,
+   "improvement_lowered_score_by_5plus": 0.0
+  },
+  "gradient_boosting": {
+   "checks": 12323,
+   "improvement_lowered_score_by_5plus": 0.0013
+  },
+  "gradient_boosting_monotonic": {
+   "checks": 12323,
+   "improvement_lowered_score_by_5plus": 0.0
+  }
+ },
+ "importance_mae_points": {
+  "utilisation": 62.96,
+  "oldest_account_months": 43.82,
+  "missed_12m": 42.78,
+  "months_since_missed": 17.44,
+  "hard_searches_12m": 17.24,
+  "electoral_roll": 13.32,
+  "ccj": 13.3,
+  "months_since_default": 11.0,
+  "min_payment_months": 6.81,
+  "overdraft_months_12m": 6.36,
+  "new_accounts_6m": 5.63,
+  "payday_loan_12m": 5.32,
+  "missed_older": 4.3,
+  "num_accounts": 4.27,
+  "financial_association": 3.88,
+  "defaults": 3.49,
+  "address_moves_2y": 1.88,
+  "total_limit": 0.75,
+  "rent_reported": 0.68
+ },
+ "one_extra_search_points": {
+  "file_under_2y": -17.8,
+  "file_over_10y": -10.6
+ },
+ "electoral_roll_points": {
+  "file_under_2y": 73.4,
+  "file_over_10y": 43.1
+ },
+ "model_size": {
+  "trees": 600,
+  "nodes": 36600
+ }
+}
+done in 242.1s; model.json 546 KB

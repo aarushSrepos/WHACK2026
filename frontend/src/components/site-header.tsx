@@ -12,6 +12,7 @@ const nav: { href: string; label: string; icon: IconName; group?: string }[] = [
   { href: "/statement", label: "Statements", icon: "receipt" },
   { href: "/payment", label: "Payments", icon: "wallet" },
   { href: "/simulator", label: "Repayment planner", icon: "chart", group: "TOOLS & SUPPORT" },
+  { href: "/credit-score", label: "Credit score coach", icon: "trend" },
   { href: "/limit", label: "Spending controls", icon: "sliders" },
   { href: "/support", label: "Get support", icon: "help" },
   { href: "/settings", label: "Accessibility", icon: "settings", group: "PREFERENCES" },
