@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-export type IconName = "home" | "receipt" | "chart" | "shield" | "credit" | "sliders" | "settings" | "arrow-up-right" | "arrow-right" | "chevron-right" | "chevron-down" | "arrow-down-left" | "search" | "sparkle" | "calendar" | "clock" | "check" | "lock" | "info" | "wallet" | "book" | "pause" | "help" | "sound" | "menu" | "close" | "reset" | "microphone";
+export type IconName = "home" | "receipt" | "chart" | "shield" | "credit" | "sliders" | "settings" | "arrow-up-right" | "arrow-right" | "chevron-right" | "chevron-down" | "arrow-down-left" | "search" | "sparkle" | "calendar" | "clock" | "check" | "lock" | "info" | "wallet" | "book" | "pause" | "help" | "sound" | "menu" | "close" | "reset" | "microphone" | "trend";
 export function BankIcon({ name, size = 20, ...props }: SVGProps<SVGSVGElement> & { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
     home: <><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 16v-5l5-4 5 4v5"/></>,
@@ -30,6 +30,7 @@ export function BankIcon({ name, size = 20, ...props }: SVGProps<SVGSVGElement> 
     sound: <><path d="M4 9h4l5-4v14l-5-4H4V9Zm13 0a5 5 0 0 1 0 6"/></>,
     menu: <path d="M4 7h16M4 12h16M4 17h16"/>,
     close: <path d="M5 5 19 19M19 5 5 19"/>,
+    trend: <><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></>,
     reset: <><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name]}</svg>;

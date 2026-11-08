@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:demo": "node scripts/test-demo.cjs",
-    "test:accessibility": "node scripts/test-accessibility.cjs"
+    "test:accessibility": "node scripts/test-accessibility.cjs",
+    "test:credit-coach": "node scripts/test-credit-coach.cjs"
   },
   "dependencies": {
     "next": "16.4.5",

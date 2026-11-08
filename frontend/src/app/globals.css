@@ -797,3 +797,13 @@ html[data-contrast="high"] .staff-customers button, html[data-contrast="high"] .
 html[data-contrast="high"] .guidance-list li, html[data-contrast="high"] .thread-messages li, html[data-contrast="high"] .status-pill,
 html[data-contrast="high"] .staff-channels > span, html[data-contrast="high"] .staff-snapshot div, html[data-contrast="high"] .support-offer { background: #fff; color: #000; border: 1px solid #000; }
 html[data-contrast="high"] .guidance-list .guidance-no_phone, html[data-contrast="high"] .channel-blocked { border-width: 2px; }
+
+/* Dashboard button that opens the credit score coach */
+.coach-cta { display: flex; align-items: center; gap: 16px; margin: 0 0 22px; padding: 18px 20px; border-radius: 8px; border: 1px solid #9cc3dc; background: linear-gradient(90deg, #eaf4fa, #fff); text-decoration: none; color: var(--ss-text); transition: border-color .18s, box-shadow .18s; }
+.coach-cta:hover { border-color: var(--ss-blue); box-shadow: 0 9px 18px rgba(16,38,49,.06); }
+.coach-cta-icon { flex: none; width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; background: var(--ss-blue); color: #fff; }
+.coach-cta strong { display: block; font-size: 0.9375rem; font-weight: 650; }
+.coach-cta small { display: block; font-size: 0.75rem; color: var(--ss-muted); margin-top: 3px; line-height: 1.5; }
+.coach-cta-go { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 8px; background: var(--ss-blue); color: #fff; font-weight: 650; font-size: 0.75rem; padding: 10px 16px; border-radius: 5px; }
+html[data-contrast="high"] .coach-cta { background: #fff; border-color: #000; }
+@media (max-width: 640px) { .coach-cta { flex-wrap: wrap; } .coach-cta-go { margin-left: 0; } }
